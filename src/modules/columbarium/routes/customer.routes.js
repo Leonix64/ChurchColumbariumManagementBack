@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const customerController = require('../controllers/customer.controller');
+const authMiddleware = require('../../auth/middlewares/auth.middleware');
 
 // POST /api/customers - Crea un nuevo cliente
-router.post('/', customerController.createCustomer);
+router.post('/', authMiddleware.verifyToken,customerController.createCustomer);
 
 // GET /api/customers - Lista clientes (con busqueda)
-router.get('/', customerController.getCustomers);
+router.get('/', authMiddleware.verifyToken,customerController.getCustomers);
 
 module.exports = router;

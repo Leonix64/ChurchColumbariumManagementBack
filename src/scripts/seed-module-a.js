@@ -2,63 +2,63 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const Niche = require('../modules/columbarium/models/niche.model');
 
-/**
- * CREA 357 NICHOS DEL MÓDULO A SECCIÓN A
- * 7 filas × 51 columnas = 357 nichos
- * Últimas 8 columnas de cada fila son de mármol
- */
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('🌱 Conectado para crear nichos...'))
+    .then(() => console.log('🌱 Conectado para crear nichos CORREGIDOS...'))
     .catch(err => console.error(err));
 
-const seedModuleA = async () => {
+const seedModuleAFixed = async () => {
     try {
-        console.log('🏗️ Creando Módulo A, Sección A...\n');
+        console.log('🏗️ Creando Módulo A, Sección A (CORREGIDO)...\n');
 
-        // Limpiar nichos existentes (opcional)
+        // Limpiar nichos existentes del módulo A
         await Niche.deleteMany({ module: 'A', section: 'A' });
 
         const niches = [];
-        let displayNumber = 1;
-
+        
         // 7 filas (1 = abajo, 7 = arriba)
+        // 51 columnas por fila
+        let globalCounter = 1;
+        
         for (let row = 1; row <= 7; row++) {
-            // 51 columnas por fila
             for (let col = 1; col <= 51; col++) {
-                // Columnas 44-51 son mármol
+                // Columnas 44-51 son mármol (últimas 8 de cada fila)
                 const isMarble = col >= 44;
                 const type = isMarble ? 'marble' : 'wood';
                 const price = isMarble ? 35000 : 30000;
-
+                
+                // Código CORRECTO: A-A-fila-numeroSecuencial
+                const code = `A-A-${row}-${globalCounter}`;
+                
                 niches.push({
-                    code: `A-A-${row}-${col}`,
-                    displayNumber: displayNumber,
+                    code: code,
+                    displayNumber: globalCounter,
                     module: 'A',
                     section: 'A',
                     row: row,
-                    number: col,
+                    number: col,  // Columna física dentro de la fila
                     type: type,
                     price: price,
                     status: 'available'
                 });
-
-                displayNumber++;
+                
+                globalCounter++;
             }
         }
 
         await Niche.insertMany(niches);
 
-        console.log(`✅ ¡Éxito! ${niches.length} nichos creados`);
+        console.log(`✅ ¡Éxito! ${niches.length} nichos creados CORRECTAMENTE`);
         console.log(`📊 Resumen:`);
         console.log(`   • Madera: ${niches.filter(n => n.type === 'wood').length} nichos`);
         console.log(`   • Mármol: ${niches.filter(n => n.type === 'marble').length} nichos`);
-        console.log(`   • Precio madera: $30,000`);
-        console.log(`   • Precio mármol: $35,000\n`);
+        console.log(`   • Rango de códigos: ${niches[0].code} a ${niches[niches.length-1].code}`);
+        console.log(`   • Rango display: ${niches[0].displayNumber} a ${niches[niches.length-1].displayNumber}\n`);
 
-        console.log('🔍 Ejemplos:');
-        console.log(`   Nicho 1: ${niches[0].code} - $${niches[0].price}`);
-        console.log(`   Nicho 44 (primero mármol): ${niches[43].code} - $${niches[43].price}`);
-        console.log(`   Último nicho: ${niches[356].code} - $${niches[356].price}`);
+        console.log('🔍 Ejemplos verificados:');
+        console.log(`   Nicho 1: ${niches[0].code} (fila 1, col 1)`);
+        console.log(`   Nicho 51: ${niches[50].code} (fila 1, col 51)`);
+        console.log(`   Nicho 52: ${niches[51].code} (fila 2, col 1) ← ¡CORRECTO!`);
+        console.log(`   Último nicho (357): ${niches[356].code} (fila 7, col 51)`);
 
         process.exit(0);
     } catch (error) {
@@ -67,4 +67,4 @@ const seedModuleA = async () => {
     }
 };
 
-seedModuleA();
+seedModuleAFixed();

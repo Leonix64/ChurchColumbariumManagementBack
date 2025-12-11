@@ -1,6 +1,7 @@
 const Sale = require('../models/sale.model');
 const Niche = require('../models/niche.model');
 const Payment = require('../models/payment.model');
+const Customer = require('../models/customer.model');
 const mongoose = require('mongoose');
 
 const saleController = {
