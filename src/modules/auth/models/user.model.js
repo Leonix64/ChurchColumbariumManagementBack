@@ -70,7 +70,7 @@ const UserSchema = new mongoose.Schema({
     tokenVersion: {
         type: Number,
         default: 0,
-        select: false // No exponer en queries normales
+        //select: false // No exponer en queries normales
     },
 
     // Refresh token actual (para seguridad)
@@ -204,30 +204,28 @@ UserSchema.virtual('isLocked').get(function () {
 });
 
 // Pre-save: Encriptar password si fue modificado
-UserSchema.pre('save', async function (next) {
+UserSchema.pre('save', async function () {
     // Solo encriptar si el password fue modificado
     if (!this.isModified('password')) {
-        return next();
+        return;
     }
 
     try {
         const salt = await bcrypt.genSalt(10);
         this.password = await bcrypt.hash(this.password, salt);
-        next();
     } catch (error) {
-        next(error);
+        throw new Error('Error al encriptar la contraseña');
     }
 });
 
 // Pre-save: Limpiar espacios en username y email
-UserSchema.pre('save', function (next) {
+UserSchema.pre('save', function () {
     if (this.username) {
         this.username = this.username.trim().toLowerCase();
     }
     if (this.email) {
         this.email = this.email.trim().toLowerCase();
     }
-    next();
 });
 
 // Para busquedas eficientes

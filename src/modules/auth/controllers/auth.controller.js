@@ -2,6 +2,7 @@ const User = require('../models/user.model');
 const jwt = require('jsonwebtoken');
 const config = require('../../../config/env');
 const { errors, asyncHandler } = require('../../../middlewares/errorHandler');
+const { setSecureCookie, clearAuthCookies } = require('../../../config/cookies');
 
 const authController = {
 
@@ -31,7 +32,8 @@ const authController = {
             fullName,
             phone: phone || '',
             role: role || 'seller',
-            isActive: true
+            isActive: true,
+            tokenVersion: 0
         });
 
         // Generar tokens
@@ -41,6 +43,10 @@ const authController = {
         // Guardar refresh token
         newUser.refreshToken = refreshToken;
         await newUser.save();
+
+        // configurar cookies (funciona en dev y prod)
+        setSecureCookie(res, 'refreshToken', refreshToken, 'refreshToken');
+        setSecureCookie(res, 'accessToken', accessToken, 'accessToken');
 
         // Preparar respuesta
         const userResponse = {
@@ -59,8 +65,9 @@ const authController = {
                 user: userResponse,
                 tokens: {
                     accessToken,
+                    expiresIn: config.jwt.accessExpire,
                     refreshToken,
-                    expiresIn: config.jwt.accessExpire
+                    expiresIn: config.jwt.refreshExpire
                 }
             }
         });
@@ -76,7 +83,7 @@ const authController = {
         // Buscar usuario (incluyendo password y datos necesarios)
         const user = await User.findOne({
             $or: [{ username }, { email: username }]
-        }).select('+password +refreshToken +loginAttempts +lockUntil');
+        }).select('+password +refreshToken +loginAttempts +lockUntil +tokenVersion');
 
         if (!user) {
             throw errors.unauthorized('Credenciales invalidas');
@@ -115,6 +122,10 @@ const authController = {
         user.refreshToken = refreshToken;
         await user.save();
 
+        // configurar cookies (funciona en dev y prod)
+        setSecureCookie(res, 'refreshToken', refreshToken, 'refreshToken');
+        setSecureCookie(res, 'accessToken', accessToken, 'accessToken');
+
         // Preparar respuesta
         const userResponse = {
             id: user._id,
@@ -124,16 +135,6 @@ const authController = {
             role: user.role,
             lastLogin: user.lastLogin
         };
-
-        // Configurar cookies (opcional)
-        if (config.server.isProduction) {
-            res.cookie('refreshToken', refreshToken, {
-                httpOnly: true,
-                secure: true,
-                sameSite: 'strict',
-                maxAge: 7 * 24 * 60 * 60 * 1000 // 7 dias
-            });
-        }
 
         return res.status(200).json({
             success: true,
@@ -189,6 +190,10 @@ const authController = {
         user.refreshToken = newRefreshToken;
         await user.save();
 
+        // configurar cookies
+        setSecureCookie(res, 'refreshToken', newRefreshToken, 'refreshToken');
+        setSecureCookie(res, 'accessToken', newAccessToken, 'accessToken');
+
         return res.status(200).json({
             success: true,
             message: 'Tokens renovados',
@@ -198,7 +203,6 @@ const authController = {
                 expiresIn: config.jwt.accessExpire
             }
         });
-
     }),
 
     /**
@@ -225,8 +229,7 @@ const authController = {
         }
 
         // Limpiar cookies
-        res.clearCookie('accessToken');
-        res.clearCookie('refreshToken');
+        clearAuthCookies(res);
 
         return res.status(200).json({
             success: true,

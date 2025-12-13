@@ -2,16 +2,17 @@
   "name": "churchsystem-backv2",
   "version": "1.0.0",
   "description": "Sistema de gestión de columbario para iglesia",
-  "main": "src/index.js",
+  "main": "src/server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
     "seed:niches": "node src/scripts/seed-module-a.js",
     "seed:customers": "node src/scripts/seed-customers.js",
     "seed:admin": "node src/scripts/seed-admin.js",
     "test:sale": "node src/scripts/test-sale-flow.js",
-    "check:data": "node src/scripts/check-data.js"
+    "check:data": "node src/scripts/check-data.js",
+    "generate:secrets": "node src/scripts/generate-secrets.js"
   },
   "keywords": [
     "church",

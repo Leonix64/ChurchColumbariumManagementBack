@@ -1,17 +1,28 @@
+# Variables de entorno (CRÍTICO)
+.env
+.env.*
+!.env.example
+
 # Dependencias
 node_modules/
-npm-debug.log*
-
-# Variables de entorno
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
 
 # Logs
 *.log
+logs/
+npm-debug.log*
 
-# Directorios de desarrollo
+# Sistema operativo
 .DS_Store
+Thumbs.db
+
+# IDEs
 .vscode/
+.idea/
+*.swp
+
+# Build
+dist/
+build/
+
+# Backups
+*.backup
