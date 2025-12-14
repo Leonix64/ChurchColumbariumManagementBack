@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/user.model');
+const config = require('../../../config/env');
 
 const authMiddleware = {
 
@@ -26,7 +27,7 @@ const authMiddleware = {
             // Verificar token
             let decoded;
             try {
-                decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+                decoded = jwt.verify(token, config.jwt.accessSecret);
             } catch (error) {
                 if (error.name === 'TokenExpiredError') {
                     return res.status(401).json({

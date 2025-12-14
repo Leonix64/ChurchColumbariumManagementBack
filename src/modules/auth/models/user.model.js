@@ -70,7 +70,6 @@ const UserSchema = new mongoose.Schema({
     tokenVersion: {
         type: Number,
         default: 0,
-        //select: false // No exponer en queries normales
     },
 
     // Refresh token actual (para seguridad)
@@ -101,12 +100,6 @@ const UserSchema = new mongoose.Schema({
     timestamps: true,
     versionKey: false
 });
-
-/* Método para encriptar password (llamado manualmente)
-UserSchema.methods.encryptPassword = async function (password) {
-    const salt = await bcrypt.genSalt(10);
-    return await bcrypt.hash(password, salt);
-};*/
 
 // Metodo para comparar passwords
 UserSchema.methods.comparePassword = async function (candidatePassword) {

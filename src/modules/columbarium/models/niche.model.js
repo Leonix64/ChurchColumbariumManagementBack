@@ -2,44 +2,141 @@ const mongoose = require('mongoose');
 
 /**
  * Modelo de NICHO
- * Representa cada espeacio del columbario
+ * Representa cada espacio del columbario
  * Cada nicho tiene un codigo unico y propiedades especificas
  */
 
 const NicheSchema = new mongoose.Schema({
-    code: { type: String, unique: true, required: true, index: true },
+    code: {
+        type: String,
+        unique: true,
+        required: [true, 'El codigo es requerido'],
+        index: true,
+        uppercase: true,
+        trim: true
+    },
 
     // El numero pintado en la pared (Ej: 52)
-    displayNumber: { type: Number, required: true },
+    displayNumber: {
+        type: Number,
+        required: [true, 'El numero de display es requerido'],
+        min: [1, 'El numero debe ser mayor a 0']
+    },
 
 
-    // Ubicacion fisica
-    module: { type: String, required: true }, // A, B, C...
-    section: { type: String, required: true }, // A, B...
-    row: { type: Number, required: true }, // Fila 1
-    number: { type: Number, required: true }, // Columna 1 a 51
+    // Ubicación física
+    module: {
+        type: String,
+        required: [true, 'El modulo es requerido'],
+        uppercase: true,
+        trim: true,
+        index: true
+    },
+
+    section: {
+        type: String,
+        required: [true, 'La seccion es requerida'],
+        uppercase: true,
+        trim: true,
+        index: true
+    },
+
+    row: {
+        type: Number,
+        required: [true, 'La fila es requerida'],
+        min: [1, 'La fila debe ser mayor a 0'],
+        index: true
+    },
+
+    number: {
+        type: Number,
+        required: [true, 'El numero es requerido'],
+        min: [1, 'El numero debe ser mayor a 0']
+    },
 
     // Caracteristicas
     type: {
         type: String,
-        enum: ['wood', 'marble', 'special'],
-        default: 'wood'
+        enum: {
+            values: ['wood', 'marble', 'special'],
+            message: 'Tipo invalido. Debe ser: wood, marble o special'
+        },
+        default: 'wood',
+        required: true,
+        index: true
     },
-    price: { type: Number, required: true },// Precio en pesos
+
+    // Precio en pesos
+    price: {
+        type: Number,
+        required: [true, 'El precio es requerido'],
+        min: [0, 'El precio no puede ser negativo']
+    },
 
     // Estado actual
     status: {
         type: String,
-        enum: ['available', 'reserved', 'sold'],
-        default: 'available'
+        enum: {
+            values: ['available', 'reserved', 'sold'],
+            message: 'Estado invalido. Debe ser: available, reserved o sold'
+        },
+        default: 'available',
+        required: true,
+        index: true
     },
-    // Referencia al dueño actual (si esta vendido)
-    currentOwner: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer' },
-    // Array de ocupantes (puede ser mas de una urna en el futuro)
-    occupants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Deceased' }],
 
-    // informacion adicional
-    notes: { type: String },
-}, { timestamps: true }); // Crea createdAt y updatedAt automaticamente
+    // Referencia al dueño actual (si está vendido)
+    currentOwner: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Customer',
+        index: true
+    },
+
+    // Array de ocupantes (puede ser más de una urna en el futuro)
+    occupants: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Deceased'
+    }],
+
+    // Informacion adicional
+    notes: {
+        type: String,
+        trim: true,
+        maxlength: [500, 'Las notas no pueden tener más de 500 caracteres']
+    }
+}, {
+    timestamps: true,
+    versionKey: false
+});
+
+// Indices compuestos para busquedas eficientes
+NicheSchema.index({ module: 1, section: 1, row: 1 });
+NicheSchema.index({ status: 1, type: 1 });
+NicheSchema.index({ currentOwner: 1, status: 1 });
+
+// Metodo virtual para verificar disponibilidad
+NicheSchema.virtual('isAvailable').get(function () {
+    return this.status === 'available';
+});
+
+// Metodo para marcar como vendido
+NicheSchema.methods.markAsSold = async function (customerId) {
+    this.status = 'sold';
+    this.currentOwner = customerId;
+    return await this.save();
+};
+
+// Metodo para marcar como reservado
+NicheSchema.methods.markAsReserved = async function () {
+    this.status = 'reserved';
+    return await this.save();
+};
+
+// Metodo para liberar (volver disponible)
+NicheSchema.methods.release = async function () {
+    this.status = 'available';
+    this.currentOwner = undefined;
+    return await this.save();
+};
 
 module.exports = mongoose.model('Niche', NicheSchema);

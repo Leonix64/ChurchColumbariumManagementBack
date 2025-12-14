@@ -65,9 +65,9 @@ const authController = {
                 user: userResponse,
                 tokens: {
                     accessToken,
-                    expiresIn: config.jwt.accessExpire,
                     refreshToken,
-                    expiresIn: config.jwt.refreshExpire
+                    accessTokenExpire: config.jwt.accessExpire,
+                    refreshTokenExpire: config.jwt.refreshExpire
                 }
             }
         });
@@ -144,7 +144,8 @@ const authController = {
                 tokens: {
                     accessToken,
                     refreshToken,
-                    expiresIn: config.jwt.accessExpire
+                    accessTokenExpire: config.jwt.accessExpire,
+                    refreshTokenExpire: config.jwt.refreshExpire
                 }
             }
         });

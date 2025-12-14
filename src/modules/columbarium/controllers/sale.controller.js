@@ -3,60 +3,47 @@ const Niche = require('../models/niche.model');
 const Payment = require('../models/payment.model');
 const Customer = require('../models/customer.model');
 const mongoose = require('mongoose');
+const { asyncHandler, errors } = require('../../../middlewares/errorHandler');
 
 const saleController = {
     /**
+     * CREAR NUEVA VENTA
      * POST /api/sales
-     * Crea una nueva venta con transaccion atomica
-     * Pasos:
-     * 1. Validar nicho disponible
-     * 2. Calcular total de amortizacion
-     * 3. Crear venta
-     * 4. Registrar enganche
-     * 5. Actualizar nicho a "vendido"
+     * Transacción atomica: venta + pago inicial + actualizar nicho
      */
-    createSale: async (req, res) => {
+    createSale: asyncHandler(async (req, res) => {
         const session = await mongoose.startSession();
         session.startTransaction();
 
         try {
             const { nicheId, customerId, totalAmount, downPayment } = req.body;
 
-            // VALIDACIONES CRITICAS
-            if (!nicheId || !customerId || !totalAmount || !downPayment) {
-                throw new Error('Faltan campos requeridos');
-            }
-
-            if (downPayment <= 0) {
-                throw new Error('El enganche debe ser mayor a 0');
-            }
-
-            if (downPayment >= totalAmount) {
-                throw new Error('El enganche debe ser menor al total');
-            }
-
-            if (totalAmount <= 0) {
-                throw new Error('El monto total debe ser mayor a 0');
-            }
-
-            // Validar que exista el cliente
+            // 1. VALIDAR QUE EXISTA EL CLIENTE
             const customer = await Customer.findById(customerId).session(session);
             if (!customer) {
-                throw new Error('Cliente no encontrado');
+                throw errors.notFound('Cliente');
             }
 
-            // 1. VALIDAR NICHO
+            if (!customer.active) {
+                throw errors.badRequest('El cliente está desactivado');
+            }
+
+            // 2. VALIDAR NICHO DISPONIBLE
             const niche = await Niche.findById(nicheId).session(session);
-            if (!niche || niche.status !== 'available') {
-                throw new Error('El nicho no está disponible o no existe.');
+            if (!niche) {
+                throw errors.notFound('Nicho');
             }
 
-            // 2. CALCULOS FINANCIEROS
+            if (niche.status !== 'available') {
+                throw errors.badRequest(`El nicho no esta disponible (estado: ${niche.status})`);
+            }
+
+            // 3. CALCULOS FINANCIEROS
             const balance = totalAmount - downPayment;
             const months = 18;
             const monthlyPaymentAmount = Number((balance / months).toFixed(2));
 
-            // 3. GENERAR TABLA DE AMORTIZACION (18 pagos mensuales)
+            // 4. GENERAR TABLA DE AMORTIZACIÓN (18 pagos mensuales)
             let amortizationTable = [];
             let currentDate = new Date();
 
@@ -72,7 +59,7 @@ const saleController = {
                 });
             }
 
-            // 4. CREAR REGISTRO DE VENTA
+            // 5. CREAR REGISTRO DE VENTA
             const newSale = new Sale({
                 niche: nicheId,
                 customer: customerId,
@@ -81,33 +68,35 @@ const saleController = {
                 downPayment,
                 balance,
                 monthsToPay: months,
-                amortizationTable
+                amortizationTable,
+                status: 'active'
             });
 
             await newSale.save({ session });
 
-            // 5. REGISTRAR PAGO INICIAL (ENGANCHE)
+            // 6. REGISTRAR PAGO INICIAL (ENGANCHE)
             const initialPayment = new Payment({
                 sale: newSale._id,
                 customer: customerId,
                 receiptNumber: `REC-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                 amount: downPayment,
                 concept: 'down_payment',
-                method: 'cash'
+                method: 'cash',
+                paymentDate: new Date()
             });
 
             await initialPayment.save({ session });
 
-            // 6. ACTUALIZAR NICHOS (MARCAR COMO VENDIDO)
+            // 7. ACTUALIZAR NICHO (MARCAR COMO VENDIDO)
             niche.status = 'sold';
             niche.currentOwner = customerId;
             await niche.save({ session });
 
-            // 7. CONFIRMAR TRANSACCION (TODO O NADA)
+            // 8. CONFIRMAR TRANSACCIÓN (TODO O NADA)
             await session.commitTransaction();
             session.endSession();
 
-            // 8. RESPONDER CON EXITO
+            // 9. RESPONDER CON ÉXITO
             res.status(201).json({
                 success: true,
                 message: 'Venta registrada exitosamente',
@@ -117,17 +106,175 @@ const saleController = {
                     niche: niche
                 }
             });
+
         } catch (error) {
             // ROLLBACK: Si algo falla, se deshace todo
             await session.abortTransaction();
             session.endSession();
 
-            res.status(400).json({
-                success: false,
-                message: `Error en la venta: ${error.message}`
-            });
+            // Re-lanzar el error para que asyncHandler lo maneje
+            throw error;
         }
-    }
+    }),
+
+    /**
+     * OBTENER TODAS LAS VENTAS
+     * GET /api/sales
+     */
+    getAllSales: asyncHandler(async (req, res) => {
+        const { status, customerId } = req.query;
+        let filter = {};
+
+        if (status) filter.status = status;
+        if (customerId) filter.customer = customerId;
+
+        const sales = await Sale.find(filter)
+            .populate('customer', 'firstName lastName phone email')
+            .populate('niche', 'code displayNumber module section type')
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            count: sales.length,
+            data: sales
+        });
+    }),
+
+    /**
+     * OBTENER VENTA POR ID
+     * GET /api/sales/:id
+     */
+    getSaleById: asyncHandler(async (req, res) => {
+        const { id } = req.params;
+
+        const sale = await Sale.findById(id)
+            .populate('customer', 'firstName lastName phone email address')
+            .populate('niche', 'code displayNumber module section type price');
+
+        if (!sale) {
+            throw errors.notFound('Venta');
+        }
+
+        res.status(200).json({
+            success: true,
+            data: sale
+        });
+    }),
+
+    /**
+     * REGISTRAR PAGO MENSUAL
+     * POST /api/sales/:id/payment
+     */
+    registerPayment: asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        const { amount, method, paymentNumber } = req.body;
+
+        const session = await mongoose.startSession();
+        session.startTransaction();
+
+        try {
+            // Buscar venta
+            const sale = await Sale.findById(id).session(session);
+            if (!sale) {
+                throw errors.notFound('Venta');
+            }
+
+            if (sale.status !== 'active') {
+                throw errors.badRequest(`La venta no está activa (estado: ${sale.status})`);
+            }
+
+            // Buscar el pago en la tabla de amortización
+            const payment = sale.amortizationTable.find(p => p.number === paymentNumber);
+            if (!payment) {
+                throw errors.notFound('Pago en tabla de amortización');
+            }
+
+            if (payment.status === 'paid') {
+                throw errors.badRequest('Este pago ya fue registrado');
+            }
+
+            // Crear registro de pago
+            const newPayment = new Payment({
+                sale: id,
+                customer: sale.customer,
+                receiptNumber: `REC-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                amount,
+                concept: 'monthly_payment',
+                method: method || 'cash',
+                paymentDate: new Date()
+            });
+
+            await newPayment.save({ session });
+
+            // Actualizar estado en tabla de amortización
+            payment.status = 'paid';
+            payment.paymentReference = newPayment._id;
+
+            // Verificar si todos los pagos están completados
+            const allPaid = sale.amortizationTable.every(p => p.status === 'paid');
+            if (allPaid) {
+                sale.status = 'paid';
+            }
+
+            await sale.save({ session });
+
+            await session.commitTransaction();
+            session.endSession();
+
+            res.status(201).json({
+                success: true,
+                message: 'Pago registrado exitosamente',
+                data: {
+                    payment: newPayment,
+                    sale: sale
+                }
+            });
+
+        } catch (error) {
+            await session.abortTransaction();
+            session.endSession();
+            throw error;
+        }
+    }),
+
+    /**
+     * OBTENER ESTADISTICAS DE VENTAS
+     * GET /api/sales/stats
+     */
+    getSalesStats: asyncHandler(async (req, res) => {
+        // Total de ventas
+        const total = await Sale.countDocuments();
+
+        // Ventas por estado
+        const statusStats = await Sale.aggregate([
+            { $group: { _id: '$status', count: { $sum: 1 } } }
+        ]);
+
+        // Monto total vendido
+        const revenueStats = await Sale.aggregate([
+            {
+                $group: {
+                    _id: null,
+                    totalRevenue: { $sum: '$totalAmount' },
+                    totalDownPayments: { $sum: '$downPayment' },
+                    totalBalance: { $sum: '$balance' }
+                }
+            }
+        ]);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                total,
+                byStatus: statusStats,
+                revenue: revenueStats[0] || {
+                    totalRevenue: 0,
+                    totalDownPayments: 0,
+                    totalBalance: 0
+                }
+            }
+        });
+    })
 };
 
 module.exports = saleController;
