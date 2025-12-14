@@ -1,18 +1,28 @@
 const crypto = require('crypto');
 
-console.log('🔐 GENERANDO SECRETOS SEGUROS PARA JWT\n');
-console.log('='.repeat(50));
+console.log('');
+console.log('='.repeat(60));
+console.log('JWT SECRET GENERATOR');
+console.log('='.repeat(60));
+console.log('');
 
-// Generar 2 secretos diferentes
+// Generate 2 different secrets
 const accessSecret = crypto.randomBytes(64).toString('hex');
 const refreshSecret = crypto.randomBytes(64).toString('hex');
 
-console.log('\n1. SECRETO PARA ACCESS TOKEN:');
-console.log('JWT_ACCESS_SECRET=' + accessSecret);
+console.log('1. ACCESS TOKEN SECRET:');
+console.log(`JWT_ACCESS_SECRET=${accessSecret}`);
+console.log('');
 
-console.log('\n2. SECRETO PARA REFRESH TOKEN:');
-console.log('JWT_REFRESH_SECRET=' + refreshSecret);
+console.log('2. REFRESH TOKEN SECRET:');
+console.log(`JWT_REFRESH_SECRET=${refreshSecret}`);
+console.log('');
 
-console.log('\n' + '='.repeat(50));
-console.log('📋 Copia estos valores en tu archivo .env');
-console.log('⚠️  Nunca los compartas o los subas a GitHub');
+console.log('='.repeat(60));
+console.log('INSTRUCTIONS:');
+console.log('  1. Copy these values to your .env file');
+console.log('  2. Never share or commit these secrets');
+console.log('  3. Use different secrets for each environment');
+console.log('  4. Rotate secrets every 3-6 months');
+console.log('='.repeat(60));
+console.log('');

@@ -13,7 +13,7 @@ const SaleSchema = new mongoose.Schema({
     customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
 
     // Usuario que registro la venta
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
 
     // Folio unico de la venta
     folio: { type: String, unique: true },
@@ -70,14 +70,13 @@ const SaleSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Middleware para validar que balance = totalAmount - downPayment
-SaleSchema.pre('validate', function (next) {
+SaleSchema.pre('validate', function () {
     if (this.totalAmount && this.downPayment) {
         const calculatedBalance = this.totalAmount - this.downPayment;
         if (this.balance !== calculatedBalance) {
             this.invalidate('balance', `El saldo debe ser ${calculatedBalance} (total - enganche)`);
         }
     }
-    next();
 });
 
 module.exports = mongoose.model('Sale', SaleSchema);

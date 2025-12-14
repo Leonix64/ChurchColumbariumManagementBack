@@ -3,68 +3,65 @@ const mongoose = require('mongoose');
 const Niche = require('../modules/columbarium/models/niche.model');
 
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('🌱 Conectado para crear nichos CORREGIDOS...'))
-    .catch(err => console.error(err));
+    .then(() => console.log('[INFO] Connected to create niches...'))
+    .catch(err => console.error('[ERROR]', err));
 
-const seedModuleAFixed = async () => {
+const seedNiches = async () => {
     try {
-        console.log('🏗️ Creando Módulo A, Sección A (CORREGIDO)...\n');
+        console.log('[INFO] Creating Module A, Section A niches...\n');
 
-        // Limpiar nichos existentes del módulo A
         await Niche.deleteMany({ module: 'A', section: 'A' });
+        console.log('[INFO] Existing niches cleared\n');
 
         const niches = [];
-        
-        // 7 filas (1 = abajo, 7 = arriba)
-        // 51 columnas por fila
         let globalCounter = 1;
-        
+
+        // 7 rows (1 = bottom, 7 = top)
+        // 51 columns per row
         for (let row = 1; row <= 7; row++) {
             for (let col = 1; col <= 51; col++) {
-                // Columnas 44-51 son mármol (últimas 8 de cada fila)
+                // Columns 44-51 are marble (last 8 of each row)
                 const isMarble = col >= 44;
                 const type = isMarble ? 'marble' : 'wood';
                 const price = isMarble ? 35000 : 30000;
-                
-                // Código CORRECTO: A-A-fila-numeroSecuencial
-                const code = `A-A-${row}-${globalCounter}`;
-                
+
                 niches.push({
-                    code: code,
+                    code: `A-A-${row}-${globalCounter}`,
                     displayNumber: globalCounter,
                     module: 'A',
                     section: 'A',
                     row: row,
-                    number: col,  // Columna física dentro de la fila
+                    number: col,
                     type: type,
                     price: price,
                     status: 'available'
                 });
-                
+
                 globalCounter++;
             }
         }
 
         await Niche.insertMany(niches);
 
-        console.log(`✅ ¡Éxito! ${niches.length} nichos creados CORRECTAMENTE`);
-        console.log(`📊 Resumen:`);
-        console.log(`   • Madera: ${niches.filter(n => n.type === 'wood').length} nichos`);
-        console.log(`   • Mármol: ${niches.filter(n => n.type === 'marble').length} nichos`);
-        console.log(`   • Rango de códigos: ${niches[0].code} a ${niches[niches.length-1].code}`);
-        console.log(`   • Rango display: ${niches[0].displayNumber} a ${niches[niches.length-1].displayNumber}\n`);
+        console.log(`[SUCCESS] ${niches.length} niches created`);
+        console.log('\nSummary:');
+        console.log(`  Wood: ${niches.filter(n => n.type === 'wood').length} niches`);
+        console.log(`  Marble: ${niches.filter(n => n.type === 'marble').length} niches`);
+        console.log(`  Code range: ${niches[0].code} to ${niches[niches.length - 1].code}`);
+        console.log(`  Display range: ${niches[0].displayNumber} to ${niches[niches.length - 1].displayNumber}`);
 
-        console.log('🔍 Ejemplos verificados:');
-        console.log(`   Nicho 1: ${niches[0].code} (fila 1, col 1)`);
-        console.log(`   Nicho 51: ${niches[50].code} (fila 1, col 51)`);
-        console.log(`   Nicho 52: ${niches[51].code} (fila 2, col 1) ← ¡CORRECTO!`);
-        console.log(`   Último nicho (357): ${niches[356].code} (fila 7, col 51)`);
+        console.log('\nVerification examples:');
+        console.log(`  Niche 1: ${niches[0].code} (row 1, col 1)`);
+        console.log(`  Niche 51: ${niches[50].code} (row 1, col 51)`);
+        console.log(`  Niche 52: ${niches[51].code} (row 2, col 1)`);
+        console.log(`  Last niche (357): ${niches[356].code} (row 7, col 51)`);
 
+        console.log('\n[INFO] Seed completed successfully\n');
         process.exit(0);
     } catch (error) {
-        console.error('❌ Error:', error);
+        console.error('[ERROR]', error);
         process.exit(1);
     }
 };
 
-seedModuleAFixed();
+seedNiches();

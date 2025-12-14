@@ -23,7 +23,7 @@ setImmediate(() => {
     require('./modules/columbarium/models/niche.model');
     require('./modules/columbarium/models/sale.model');
     require('./modules/columbarium/models/payment.model');
-    console.log('■ Modelos registrados correctamente');
+    console.log('[INFO] Modelos registrados correctamente');
 });
 
 // Rutas
@@ -36,15 +36,17 @@ app.use('/api/sales', require('./modules/columbarium/routes/sale.routes'));
 app.get('/', (req, res) => {
     res.json({
         success: true,
-        message: 'API del Sistema de Columbario',
+        message: 'Church Columbarium Management API',
         version: '2.0.0',
         environment: config.server.env,
         features: [
-            'Autenticación JWT con Refresh Tokens',
-            'Sistema de roles (admin/seller/viewer)',
-            'Gestión de nichos de columbario',
-            'Sistema de ventas con amortización',
-            'Transacciones atómicas'
+            'JWT Authentication with Refresh Tokens',
+            'Role-based Access Control (RBAC)',
+            'Columbarium Niche Management',
+            'Sales System with Amortization Tables',
+            'Atomic Transactions for Sales',
+            'Customer Management',
+            'Payment Tracking'
         ],
         documentation: {
             auth: {
@@ -53,19 +55,32 @@ app.get('/', (req, res) => {
                 profile: 'GET /api/auth/profile',
                 refreshToken: 'POST /api/auth/refresh-token',
                 logout: 'POST /api/auth/logout',
-                changePassword: 'POST /api/auth/change-password'
-            },
-            niches: {
-                list: 'GET /api/niches',
-                byCode: 'GET /api/niches/code/:code',
-                update: 'PATCH /api/niches/:id'
+                changePassword: 'POST /api/auth/change-password',
+                invalidateAll: 'POST /api/auth/invalidate-all',
+                adminUsers: 'GET /api/auth/admin/users'
             },
             customers: {
                 create: 'POST /api/customers',
-                search: 'GET /api/customers?search=texto'
+                list: 'GET /api/customers',
+                getById: 'GET /api/customers/:id',
+                update: 'PUT /api/customers/:id',
+                deactivate: 'DELETE /api/customers/:id',
+                activate: 'PATCH /api/customers/:id/activate'
+            },
+            niches: {
+                list: 'GET /api/niches',
+                stats: 'GET /api/niches/stats',
+                available: 'GET /api/niches/available',
+                byCode: 'GET /api/niches/code/:code',
+                byId: 'GET /api/niches/:id',
+                update: 'PATCH /api/niches/:id'
             },
             sales: {
-                create: 'POST /api/sales'
+                create: 'POST /api/sales',
+                list: 'GET /api/sales',
+                getById: 'GET /api/sales/:id',
+                stats: 'GET /api/sales/stats',
+                registerPayment: 'POST /api/sales/:id/payment'
             }
         },
         links: {
@@ -81,7 +96,9 @@ app.get('/health', (req, res) => {
         success: true,
         status: 'healthy',
         timestamp: new Date().toISOString(),
-        uptime: process.uptime()
+        uptime: Math.floor(process.uptime()),
+        environment: config.server.env,
+        database: 'connected'
     });
 });
 
@@ -95,44 +112,65 @@ app.use(errorHandler);
 const PORT = config.server.port;
 
 app.listen(PORT, () => {
-    console.log('\n' + '='.repeat(50));
-    console.log('🚀 SERVIDOR INICIADO EXITOSAMENTE');
-    console.log('='.repeat(50));
-    console.log(`\n📍 URL Local:        http://localhost:${PORT}`);
-    console.log(`📍 API Docs:         http://localhost:${PORT}/`);
-    console.log(`📍 Health Check:     http://localhost:${PORT}/health`);
-    console.log(`\n🌍 Entorno:          ${config.server.env}`);
-    console.log(`🔐 JWT Configurado:  ✅`);
-    console.log(`🗄️  Base de Datos:    ✅`);
-    console.log(`🌐 CORS Habilitado:  ${config.cors.origin}`);
+    console.log('');
+    console.log('='.repeat(60));
+    console.log('SERVER STARTED SUCCESSFULLY');
+    console.log('='.repeat(60));
+    console.log('');
+    console.log(`Environment:        ${config.server.env}`);
+    console.log(`Port:               ${PORT}`);
+    console.log(`URL:                http://localhost:${PORT}`);
+    console.log(`API Docs:           http://localhost:${PORT}/`);
+    console.log(`Health Check:       http://localhost:${PORT}/health`);
+    console.log('');
+    console.log(`JWT:                Configured`);
+    console.log(`Database:           Connected`);
+    console.log(`CORS:               ${config.cors.origin}`);
+    console.log('');
 
     if (config.server.isDevelopment) {
-        console.log('\n📝 COMANDOS ÚTILES:');
-        console.log('   npm run seed:admin      - Crear usuario admin');
-        console.log('   npm run seed:niches     - Crear nichos de prueba');
-        console.log('   npm run seed:customers  - Crear clientes de prueba');
-        console.log('   npm run generate:secrets - Generar nuevos secretos JWT');
+        console.log('DEVELOPMENT COMMANDS:');
+        console.log('  npm run seed:admin      - Create admin user');
+        console.log('  npm run seed:niches     - Populate niches database');
+        console.log('  npm run seed:customers  - Create test customers');
+        console.log('  npm run generate:secrets - Generate new JWT secrets');
+        console.log('');
     }
 
-    console.log('\n' + '='.repeat(50) + '\n');
+    console.log('='.repeat(60));
+    console.log('');
+});
+
+// Apagado graceful
+process.on('SIGTERM', () => {
+    console.log('[INFO] SIGTERM signal received: closing HTTP server');
+    server.close(() => {
+        console.log('[INFO] HTTP server closed');
+        process.exit(0);
+    });
+});
+
+process.on('SIGINT', () => {
+    console.log('[INFO] SIGINT signal received: closing HTTP server');
+    server.close(() => {
+        console.log('[INFO] HTTP server closed');
+        process.exit(0);
+    });
 });
 
 // Errores de promesas no manejadas
 process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection:', reason);
-    // En producción, considera cerrar el servidor gracefully
+    console.error('[ERROR] Unhandled Rejection at:', promise);
+    console.error('[ERROR] Reason:', reason);
     if (config.server.isProduction) {
         process.exit(1);
     }
 });
 
-// Errores no capturados
+// Errores de excepciones no manejadas
 process.on('uncaughtException', (error) => {
-    console.error('Uncaught Exception:', error);
-    // En producción, cierra el servidor
+    console.error('[ERROR] Uncaught Exception:', error);
     if (config.server.isProduction) {
         process.exit(1);
     }
 });
-
-module.exports = app;
