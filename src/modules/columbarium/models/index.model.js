@@ -6,6 +6,6 @@ require('./niche.model');
 require('./sale.model');
 require('./payment.model');
 
-console.log('■ Todos los modelos han sido registrados');
+console.log('[INFO] Modelos registrados correctamente');
 
 module.exports = mongoose;

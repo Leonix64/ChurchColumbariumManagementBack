@@ -18,12 +18,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser()); // Para manejar cookies
 
 setImmediate(() => {
-    require('./modules/columbarium/models/customer.model');
-    require('./modules/columbarium/models/deceased.model');
-    require('./modules/columbarium/models/niche.model');
-    require('./modules/columbarium/models/sale.model');
-    require('./modules/columbarium/models/payment.model');
-    console.log('[INFO] Modelos registrados correctamente');
+    require('./modules/columbarium/models/index.model');
 });
 
 // Rutas
