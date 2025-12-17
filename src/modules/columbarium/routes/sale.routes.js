@@ -62,4 +62,10 @@ router.post('/:id/payment',
     saleController.registerPayment
 );
 
+// Venta múltiple
+router.post('/bulk',
+    authMiddleware.checkRole('admin', 'seller'),
+    saleController.createBulkSale
+);
+
 module.exports = router;

@@ -68,4 +68,50 @@ router.patch('/:id',
     nicheController.updateNicheStatus
 );
 
+// Rutas de customización
+
+// Cambiar material (individual)
+router.patch('/:id/material',
+    authMiddleware.checkRole('admin'),
+    columbariumValidator.validateMongoId('id'),
+    nicheController.changeMaterial
+);
+
+// Cambiar material (masivo)
+router.post('/bulk-material',
+    authMiddleware.checkRole('admin'),
+    nicheController.bulkChangeMaterial
+);
+
+// Cambiar precio (individual)
+router.patch('/:id/price',
+    authMiddleware.checkRole('admin'),
+    columbariumValidator.validateMongoId('id'),
+    nicheController.changePrice
+);
+
+// Deshabilitar nichos
+router.post('/disable',
+    authMiddleware.checkRole('admin'),
+    nicheController.disableNiches
+);
+
+// Habilitar nichos
+router.post('/enable',
+    authMiddleware.checkRole('admin'),
+    nicheController.enableNiches
+);
+
+// Crear nichos nuevos
+router.post('/',
+    authMiddleware.checkRole('admin'),
+    nicheController.createNiches
+);
+
+// Listar nichos deshabilitados
+router.get('/disabled',
+    authMiddleware.checkRole('admin', 'seller'),
+    nicheController.getDisabledNiches
+);
+
 module.exports = router;

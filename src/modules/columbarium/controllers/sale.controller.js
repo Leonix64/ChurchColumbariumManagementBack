@@ -274,6 +274,126 @@ const saleController = {
                 }
             }
         });
+    }),
+
+    /**
+     * CREAR VENTA MÚLTIPLE
+     * POST /api/sales/bulk
+     */
+    createBulkSale: asyncHandler(async (req, res) => {
+        const session = await mongoose.startSession();
+        session.startTransaction();
+
+        try {
+            const { nicheIds, customerId, totalAmount, downPayment } = req.body;
+
+            if (!nicheIds || !Array.isArray(nicheIds) || nicheIds.length === 0) {
+                throw errors.badRequest('Selecciona al menos 1 nicho');
+            }
+
+            if (nicheIds.length > 100) {
+                throw errors.badRequest('Máximo 100 nichos por venta');
+            }
+
+            const customer = await Customer.findById(customerId).session(session);
+            if (!customer || !customer.active) {
+                throw errors.notFound('Cliente no encontrado o inactivo');
+            }
+
+            const niches = await Niche.find({ _id: { $in: nicheIds } }).session(session);
+
+            if (niches.length !== nicheIds.length) {
+                throw errors.notFound('Algunos nichos no existen');
+            }
+
+            const unavailable = niches.filter(n => n.status !== 'available');
+            if (unavailable.length > 0) {
+                throw errors.badRequest(
+                    `Nichos no disponibles: ${unavailable.map(n => n.code).join(', ')}`
+                );
+            }
+
+            const balance = totalAmount - downPayment;
+            const months = 18;
+            const monthlyPaymentAmount = Number((balance / months).toFixed(2));
+
+            let amortizationTable = [];
+            let currentDate = new Date();
+
+            for (let i = 1; i <= months; i++) {
+                let paymentDate = new Date(currentDate);
+                paymentDate.setMonth(paymentDate.getMonth() + i);
+
+                amortizationTable.push({
+                    number: i,
+                    dueDate: paymentDate,
+                    amount: monthlyPaymentAmount,
+                    status: 'pending'
+                });
+            }
+
+            const newSale = new Sale({
+                niche: nicheIds[0],
+                customer: customerId,
+                folio: `BULK-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                totalAmount,
+                downPayment,
+                balance,
+                monthsToPay: months,
+                amortizationTable,
+                status: 'active',
+                notes: `Venta múltiple: ${nicheIds.length} nichos (${niches.map(n => n.code).join(', ')})`
+            });
+
+            await newSale.save({ session });
+
+            const initialPayment = new Payment({
+                sale: newSale._id,
+                customer: customerId,
+                receiptNumber: `REC-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                amount: downPayment,
+                concept: 'down_payment',
+                method: 'cash',
+                paymentDate: new Date()
+            });
+
+            await initialPayment.save({ session });
+
+            await Niche.updateMany(
+                { _id: { $in: nicheIds } },
+                {
+                    $set: {
+                        status: 'sold',
+                        currentOwner: customerId,
+                        notes: `Venta: ${newSale.folio}`
+                    }
+                },
+                { session }
+            );
+
+            await session.commitTransaction();
+            session.endSession();
+
+            res.status(201).json({
+                success: true,
+                message: `Venta múltiple registrada: ${nicheIds.length} nichos`,
+                data: {
+                    sale: newSale,
+                    payment: initialPayment,
+                    niches: niches.map(n => ({
+                        code: n.code,
+                        displayNumber: n.displayNumber,
+                        type: n.type,
+                        price: n.price
+                    }))
+                }
+            });
+
+        } catch (error) {
+            await session.abortTransaction();
+            session.endSession();
+            throw error;
+        }
     })
 };
 

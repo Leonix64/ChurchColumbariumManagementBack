@@ -178,6 +178,301 @@ const nicheController = {
             count: niches.length,
             data: niches
         });
+    }),
+
+    /**
+     * CAMBIAR MATERIAL (1 nicho)
+     * PATCH /api/niches/:id/material
+     * Body: { type: 'wood' | 'marble, price: 35000 }
+     */
+    changeMaterial: asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        const { type, price } = req.body;
+
+        if (!type || !['wood', 'marble', 'special'].includes(type)) {
+            throw errors.badRequest('Tipo debe ser: wood, marble o special');
+        }
+
+        if (!price || price <= 0) {
+            throw errors.badRequest('Precio debe ser mayor a 0');
+        }
+
+        const niche = await Niche.findById(id);
+        if (!niche) {
+            throw errors.notFound('Nicho');
+        }
+
+        if (niche.status === 'sold') {
+            throw errors.badRequest('No se puede cambiar material de nicho vendido');
+        }
+
+        const oldType = niche.type;
+        const oldPrice = niche.price;
+
+        niche.type = type;
+        niche.price = price;
+        await niche.save();
+
+        res.json({
+            success: true,
+            message: 'Material actualizado',
+            data: {
+                code: niche.code,
+                oldType,
+                newType: type,
+                oldPrice,
+                newPrice: price
+            }
+        });
+    }),
+
+    /**
+     * CAMBIAR MATERIAL MASIVO
+     * POST /api/niches/bulk-material
+     * Body: { niches: [id1, id2, ...], type: 'wood' | 'marble, price: 35000 }
+     */
+    bulkChangeMaterial: asyncHandler(async (req, res) => {
+        const { nicheIds, type, price } = req.body;
+
+        if (!nicheIds || !Array.isArray(nicheIds) || nicheIds.length === 0) {
+            throw errors.badRequest('Proporciona al menos un ID de nicho');
+        }
+
+        if (!type || !['wood', 'marble', 'special'].includes(type)) {
+            throw errors.badRequest('Tipo debe ser: wood, marble o special');
+        }
+
+        if (!price || price <= 0) {
+            throw errors.badRequest('Precio debe ser mayor a 0');
+        }
+
+        const soldNiches = await Niche.find({
+            _id: { $in: nicheIds },
+            status: 'sold'
+        });
+
+        if (soldNiches.length > 0) {
+            throw errors.badRequest(`No se pueden modificar nichos vendidos: ${soldNiches.map(n => n.code).join(', ')}`);
+        }
+
+        const result = await Niche.updateMany(
+            { _id: { $in: nicheIds }, status: { $ne: 'sold' } },
+            { $set: { type: type, price: price } }
+        );
+
+        const updated = await Niche.find({ _id: { $in: nicheIds } })
+            .select('code displayNumber type price');
+
+        res.json({
+            success: true,
+            message: `${result.modifiedCount} nicho(s) actualizados a ${type}`,
+            data: updated
+        });
+    }),
+
+    /**
+     * CAMBIAR PRECIO
+     * PATCH /api/niches/:id/price
+     * Body: { price: 32000 }
+     */
+    changePrice: asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        const { price } = req.body;
+
+        if (!price || price <= 0) {
+            throw errors.badRequest('Precio debe ser mayor a 0');
+        }
+
+        const niche = await Niche.findById(id);
+        if (!niche) {
+            throw errors.notFound('Nicho');
+        }
+
+        if (niche.status === 'sold') {
+            throw errors.badRequest('No se puede cambiar precio de nicho vendido');
+        }
+
+        const oldPrice = niche.price;
+        niche.price = price;
+        await niche.save();
+
+        res.json({
+            success: true,
+            message: 'Precio actualizado',
+            data: {
+                code: niche.code,
+                oldPrice,
+                newPrice: price
+            }
+        });
+    }),
+
+    /**
+     * DESHABILITAR NICHOS
+     * POST /api/niches/disable
+     * Body: { nicheIds: [id1, id2, ...], reason: 'Motivo }
+     */
+    disableNiches: asyncHandler(async (req, res) => {
+        const { nicheIds, reason } = req.body;
+
+        if (!nicheIds || !Array.isArray(nicheIds) || nicheIds.length === 0) {
+            throw errors.badRequest('Proporciona al menos un ID de nicho');
+        }
+
+        if (!reason || reason.trim().length === 0) {
+            throw errors.badRequest('Proporciona una razón para deshabilitar');
+        }
+
+        const niches = await Niche.find({ _id: { $in: nicheIds } });
+
+        if (niches.length !== nicheIds.length) {
+            throw errors.notFound('Algunos nichos no existen');
+        }
+
+        const soldNiches = niches.filter(n => n.status === 'sold');
+        if (soldNiches.length > 0) {
+            throw errors.badRequest(`No se pueden deshabilitar nichos vendidos: ${soldNiches.map(n => n.code).join(', ')}`);
+        }
+
+        const result = await Niche.updateMany(
+            { _id: { $in: nicheIds } },
+            {
+                $set: {
+                    status: 'disabled',
+                    disabledReason: reason.trim(),
+                    disabledAt: new Date(),
+                    disabledBy: req.user.id
+                }
+            }
+        );
+
+        const updated = await Niche.find({ _id: { $in: nicheIds } })
+            .select('code displayNumber module section status');
+
+        res.json({
+            success: true,
+            message: `${result.modifiedCount} nicho(s) deshabilitado(s)`,
+            data: updated
+        });
+    }),
+
+    /**
+     * HABILITAR NICHOS
+     * POST /api/niches/enable
+     * Body: { nicheIds: [id1, id2] }
+     */
+    enableNiches: asyncHandler(async (req, res) => {
+        const { nicheIds } = req.body;
+
+        if (!nicheIds || !Array.isArray(nicheIds) || nicheIds.length === 0) {
+            throw errors.badRequest('Proporciona al menos un ID de nicho');
+        }
+
+        const result = await Niche.updateMany(
+            { _id: { $in: nicheIds }, status: 'disabled' },
+            {
+                $set: {
+                    status: 'available',
+                    disabledReason: null,
+                    disabledAt: null,
+                    disabledBy: null
+                }
+            }
+        );
+
+        const updated = await Niche.find({ _id: { $in: nicheIds } })
+            .select('code displayNumber module section status');
+
+        res.json({
+            success: true,
+            message: `${result.modifiedCount} nicho(s) habilitado(s)`,
+            data: updated
+        });
+    }),
+
+    /**
+     * CREAR NUEVOS NICHOS
+     * POST /api/niches
+     * Body: { module, section, rows, nichesPerRow, startNumber, marbleFrom, prices }
+     */
+    createNiches: asyncHandler(async (req, res) => {
+        const {
+            module,
+            section,
+            rows,
+            nichesPerRow,
+            startNumber = 1,
+            marbleFrom = 999,
+            prices = { wood: 30000, marble: 35000 }
+        } = req.body;
+
+        if (!module || !section || !rows || !nichesPerRow) {
+            throw errors.badRequest('Faltan datos requeridos');
+        }
+
+        if (rows < 1 || nichesPerRow < 1) {
+            throw errors.badRequest('Filas y nichos por fila deben ser mayores a 0');
+        }
+
+        const existing = await Niche.findOne({ module, section });
+        if (existing) {
+            throw errors.conflict(`Ya existe el módulo ${module}, sección ${section}`);
+        }
+
+        const niches = [];
+        let globalNumber = startNumber;
+
+        for (let row = 1; row <= rows; row++) {
+            for (let col = 1; col <= nichesPerRow; col++) {
+                const isMarble = col >= marbleFrom;
+                const type = isMarble ? 'marble' : 'wood';
+                const price = isMarble ? prices.marble : prices.wood;
+
+                niches.push({
+                    code: `${module}-${section}-${row}-${globalNumber}`,
+                    displayNumber: globalNumber,
+                    module,
+                    section,
+                    row,
+                    number: col,
+                    type,
+                    price,
+                    status: 'available'
+                });
+
+                globalNumber++;
+            }
+        }
+
+        const created = await Niche.insertMany(niches);
+
+        res.status(201).json({
+            success: true,
+            message: `${created.length} nichos creados`,
+            data: {
+                module,
+                section,
+                total: created.length,
+                wood: created.filter(n => n.type === 'wood').length,
+                marble: created.filter(n => n.type === 'marble').length
+            }
+        });
+    }),
+
+    /**
+     * VER NICHOS DESHABILITADOS
+     * GET /api/niches/disabled
+     */
+    getDisabledNiches: asyncHandler(async (req, res) => {
+        const niches = await Niche.find({ status: 'disabled' })
+            .populate('disabledBy', 'username fullName')
+            .sort({ disabledAt: -1 });
+
+        res.json({
+            success: true,
+            count: niches.length,
+            data: niches
+        });
     })
 };
 

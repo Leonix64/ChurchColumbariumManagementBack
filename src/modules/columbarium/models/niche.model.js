@@ -77,8 +77,8 @@ const NicheSchema = new mongoose.Schema({
     status: {
         type: String,
         enum: {
-            values: ['available', 'reserved', 'sold'],
-            message: 'Estado invalido. Debe ser: available, reserved o sold'
+            values: ['available', 'reserved', 'sold', 'disabled'],
+            message: 'Estado invalido. Debe ser: available, reserved, sold o disabled'
         },
         default: 'available',
         required: true,
@@ -103,6 +103,19 @@ const NicheSchema = new mongoose.Schema({
         type: String,
         trim: true,
         maxlength: [500, 'Las notas no pueden tener más de 500 caracteres']
+    },
+
+    disabledReason: {
+        type: String,
+        trim: true,
+        maxlength: [500, 'El motivo no puede tener más de 500 caracteres']
+    },
+    disableAt: {
+        type: Date,
+    },
+    disabledBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     }
 }, {
     timestamps: true,

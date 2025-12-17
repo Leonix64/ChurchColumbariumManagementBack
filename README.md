@@ -61,13 +61,14 @@ LOG_LEVEL=info
 
 ### 🗄️ Nichos
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| `GET` | `/niches` | Lista nichos con filtros |
-| `GET` | `/niches/code/:code` | Busca nicho por código |
-| `PATCH` | `/niches/:id` | Actualiza estado de nicho |
+| Método  | Endpoint             | Descripción               |
+| ------- | -------------------- | ------------------------- |
+| `GET`   | `/niches`            | Lista nichos con filtros  |
+| `GET`   | `/niches/code/:code` | Busca nicho por código    |
+| `PATCH` | `/niches/:id`        | Actualiza estado de nicho |
 
 **Ejemplo de filtros:**
+
 ```bash
 GET /api/niches?status=disponible
 GET /api/niches?module=A&section=1
@@ -75,12 +76,13 @@ GET /api/niches?module=A&section=1
 
 ### 👥 Clientes
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| `POST` | `/customers` | Crea nuevo cliente |
-| `GET` | `/customers?search=texto` | Busca clientes por nombre/RFC |
+| Método | Endpoint                  | Descripción                   |
+| ------ | ------------------------- | ----------------------------- |
+| `POST` | `/customers`              | Crea nuevo cliente            |
+| `GET`  | `/customers?search=texto` | Busca clientes por nombre/RFC |
 
 **Ejemplo de creación:**
+
 ```json
 POST /api/customers
 {
@@ -99,11 +101,12 @@ POST /api/customers
 
 ### 💰 Ventas
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
+| Método | Endpoint | Descripción                |
+| ------ | -------- | -------------------------- |
 | `POST` | `/sales` | Crea venta con transacción |
 
 **Ejemplo de venta:**
+
 ```json
 POST /api/sales
 {
@@ -117,16 +120,17 @@ POST /api/sales
 
 ## 📊 Scripts Disponibles
 
-| Comando | Descripción |
-|---------|-------------|
-| `npm run dev` | Inicia el servidor en modo desarrollo con nodemon |
-| `npm start` | Inicia el servidor en modo producción |
-| `npm run seed:niches` | Crea 357 nichos en la base de datos |
-| `npm run seed:customers` | Crea clientes de prueba |
-| `npm run test:sale` | Ejecuta prueba del flujo de venta completo |
-| `npm run check:data` | Verifica integridad de datos |
+| Comando                  | Descripción                                       |
+| ------------------------ | ------------------------------------------------- |
+| `npm run dev`            | Inicia el servidor en modo desarrollo con nodemon |
+| `npm start`              | Inicia el servidor en modo producción             |
+| `npm run seed:niches`    | Crea 357 nichos en la base de datos               |
+| `npm run seed:customers` | Crea clientes de prueba                           |
+| `npm run test:sale`      | Ejecuta prueba del flujo de venta completo        |
+| `npm run check:data`     | Verifica integridad de datos                      |
 
 **Ejemplo de uso:**
+
 ```bash
 # Desarrollo con recarga automática
 npm run dev
@@ -142,17 +146,20 @@ npm run test:sale
 ## 🔐 Validaciones Clave
 
 ### Transacciones Atómicas
+
 - Todas las ventas se ejecutan dentro de transacciones MongoDB
 - Rollback automático en caso de error
 - Garantiza consistencia de datos
 
 ### Integridad de Datos
+
 - Códigos únicos para nichos (Ej: `A-1-001`)
 - Folios únicos para ventas con formato `COL-YYYYMMDD-XXXX`
 - RFC validado con formato oficial mexicano
 - Estados de nicho controlados: `disponible`, `vendido`, `reservado`
 
 ### Tabla de Amortización
+
 ```javascript
 // Generación automática al crear venta
 {
@@ -162,28 +169,6 @@ npm run test:sale
   "saldoPendiente": 37777.78,
   "estado": "pendiente"
 }
-```
-
-## 🧪 Pruebas
-
-### Probar Endpoints con cURL
-
-```bash
-# Listar nichos disponibles
-curl http://localhost:3000/api/niches?status=disponible
-
-# Buscar nicho por código
-curl http://localhost:3000/api/niches/code/A-1-001
-
-# Crear cliente
-curl -X POST http://localhost:3000/api/customers \
-  -H "Content-Type: application/json" \
-  -d '{"nombre":"Juan Pérez","rfc":"PEJX850101XXX","telefono":"6181234567"}'
-
-# Crear venta
-curl -X POST http://localhost:3000/api/sales \
-  -H "Content-Type: application/json" \
-  -d '{"customerId":"...","nicheId":"...","precioTotal":50000,"enganche":10000,"plazoMeses":18}'
 ```
 
 ## 🐛 Manejo de Errores
@@ -200,18 +185,19 @@ El sistema incluye middleware centralizado de errores que responde con formato e
 
 ### Códigos de Estado HTTP
 
-| Código | Descripción |
-|--------|-------------|
-| `200` | Operación exitosa |
-| `201` | Recurso creado exitosamente |
-| `400` | Error de validación |
-| `404` | Recurso no encontrado |
-| `409` | Conflicto (nicho no disponible, etc.) |
-| `500` | Error interno del servidor |
+| Código | Descripción                           |
+| ------ | ------------------------------------- |
+| `200`  | Operación exitosa                     |
+| `201`  | Recurso creado exitosamente           |
+| `400`  | Error de validación                   |
+| `404`  | Recurso no encontrado                 |
+| `409`  | Conflicto (nicho no disponible, etc.) |
+| `500`  | Error interno del servidor            |
 
 ## 📝 Modelos de Datos
 
 ### Nicho
+
 ```javascript
 {
   codigo: "A-1-001",
@@ -226,6 +212,7 @@ El sistema incluye middleware centralizado de errores que responde con formato e
 ```
 
 ### Cliente
+
 ```javascript
 {
   nombre: "Juan Pérez",
@@ -244,6 +231,7 @@ El sistema incluye middleware centralizado de errores que responde con formato e
 ```
 
 ### Venta
+
 ```javascript
 {
   folio: "COL-20250101-0001",
@@ -270,26 +258,3 @@ El sistema incluye middleware centralizado de errores que responde con formato e
   updatedAt: Date
 }
 ```
-
-## 🚦 Estado del Proyecto
-
-- [x] Modelos de datos definidos
-- [x] Endpoints CRUD básicos
-- [x] Sistema de transacciones
-- [x] Generación de tabla de amortización
-- [x] Scripts de seed y testing
-- [ ] Sistema de pagos/abonos
-- [ ] Reportes y estadísticas
-- [ ] Dashboard administrativo
-- [ ] Sistema de notificaciones
-
-## 🤝 Contribución
-
-1. Fork el proyecto
-2. Crea tu rama de feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
-
-
-⭐ Si este proyecto te fue útil, considera darle una estrella en GitHub
