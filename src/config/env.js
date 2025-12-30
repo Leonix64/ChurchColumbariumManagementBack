@@ -18,7 +18,7 @@ const optionalVars = {
     JWT_ACCESS_EXPIRE: '15m',
     JWT_REFRESH_EXPIRE: '7d',
     NODE_ENV: 'development',
-    FRONTEND_URL: 'http://localhost:5173'
+    FRONTEND_URL: 'http://localhost:1234'
 };
 
 /**
@@ -85,7 +85,23 @@ const config = {
 
     // CORS
     cors: {
-        origin: getEnv('FRONTEND_URL'),
+        origin: function (origin, callback) {
+            const allowedOrigins = [
+                getEnv('FRONTEND_URL'),
+                'http://localhost:5000',
+                'http://localhost:8100', // Columbarium
+                // Agrega otros orígenes permitidos aquí
+            ];
+
+            // Permitir requests sin origen
+            if (!origin) return callback(null, true);
+
+            if (allowedOrigins.indexOf(origin) !== -1) {
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
         credentials: true
     },
 

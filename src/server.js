@@ -106,7 +106,7 @@ app.use(errorHandler);
 // Servidor
 const PORT = config.server.port;
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log('');
     console.log('='.repeat(60));
     console.log('SERVER STARTED SUCCESSFULLY');
