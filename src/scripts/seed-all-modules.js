@@ -33,7 +33,7 @@ const MODULES_CONFIG = {
                 rows: 7,
                 nichesPerRow: 9,
                 marbleFrom: 1, // TODO ES MÁRMOL
-                prices: { marble: 40000 }
+                prices: { marble: 35000 }
             }
         }
     },
@@ -148,43 +148,37 @@ const MODULES_CONFIG = {
  */
 const generateModuleNiches = (moduleName, moduleConfig) => {
     const niches = [];
-    let globalDisplayNumber = 1;
+    let displayNumber = 1; // 🔑 ÚNICO POR MÓDULO
 
-    // Iterar por cada sección (A, B, etc.)
-    for (const [sectionName, sectionConfig] of Object.entries(moduleConfig.sections)) {
-        const {
-            rows,
-            nichesPerRow,
-            startNumber = 1,
-            marbleFrom,
-            prices
-        } = sectionConfig;
+    for (let row = 1; row <= 7; row++) {
+        for (const [sectionName, sectionConfig] of Object.entries(moduleConfig.sections)) {
+            const {
+                nichesPerRow,
+                marbleFrom,
+                prices
+            } = sectionConfig;
 
-        // Cada sección empieza su numeración global
-        globalDisplayNumber = startNumber;
-
-        // Iterar filas (1 = abajo, 7 = arriba)
-        for (let row = 1; row <= rows; row++) {
-            // Iterar columnas
             for (let col = 1; col <= nichesPerRow; col++) {
                 const isMarble = col >= marbleFrom;
                 const type = isMarble ? 'marble' : 'wood';
-                const price = isMarble ? prices.marble : (prices.wood || prices.marble);
+                const price = isMarble
+                    ? prices.marble
+                    : (prices.wood || prices.marble);
 
                 niches.push({
-                    code: `${moduleName}-${sectionName}-${row}-${globalDisplayNumber}`,
-                    displayNumber: globalDisplayNumber,
+                    code: `${moduleName}-${sectionName}-${row}-${displayNumber}`,
+                    displayNumber,
                     module: moduleName,
                     section: sectionName,
-                    row: row,
+                    row,
                     number: col,
-                    type: type,
-                    price: price,
+                    type,
+                    price,
                     status: 'available',
                     notes: ''
                 });
 
-                globalDisplayNumber++;
+                displayNumber++;
             }
         }
     }
