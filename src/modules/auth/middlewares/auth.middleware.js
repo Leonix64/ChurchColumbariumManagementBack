@@ -5,7 +5,7 @@ const config = require('../../../config/env');
 const authMiddleware = {
 
     /**
-     * 🔐 VERIFICAR TOKEN DE ACCESO
+     * VERIFICAR TOKEN DE ACCESO
      */
     verifyToken: async (req, res, next) => {
         try {
@@ -38,11 +38,11 @@ const authMiddleware = {
                 }
                 return res.status(401).json({
                     success: false,
-                    message: 'Token inválido'
+                    message: 'Token invalido'
                 });
             }
 
-            // Verificar que el usuario existe y está activo
+            // Verificar que el usuario existe y esta activo
             const user = await User.findById(decoded.id)
                 .select('+tokenVersion +isActive');
 
@@ -60,11 +60,11 @@ const authMiddleware = {
                 });
             }
 
-            // Verificar token version (para invalidación global)
+            // Verificar token version (para invalidacion global)
             if (decoded.tokenVersion !== user.tokenVersion) {
                 return res.status(401).json({
                     success: false,
-                    message: 'Token inválido. Por favor, inicia sesión nuevamente.',
+                    message: 'Token invalido. Por favor, inicia sesion nuevamente.',
                     code: 'TOKEN_VERSION_MISMATCH'
                 });
             }
@@ -84,13 +84,13 @@ const authMiddleware = {
             console.error('Error en verifyToken:', error);
             return res.status(500).json({
                 success: false,
-                message: 'Error en autenticación'
+                message: 'Error en autenticacion'
             });
         }
     },
 
     /**
-     * 👑 VERIFICAR ROL (Autorización)
+     * VERIFICAR ROL (Autorizacion)
      */
     checkRole: (...allowedRoles) => {
         return (req, res, next) => {
@@ -113,7 +113,7 @@ const authMiddleware = {
     },
 
     /**
-     * 🎯 VERIFICAR SI ES EL MISMO USUARIO O ADMIN
+     * VERIFICAR SI ES EL MISMO USUARIO O ADMIN
      * Para operaciones que solo el dueño o admin puede hacer
      */
     checkOwnerOrAdmin: (req, res, next) => {

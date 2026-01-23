@@ -23,6 +23,7 @@ setImmediate(() => {
 
 // Rutas
 app.use('/api/auth', require('./modules/auth/routes/auth.routes'));
+app.use('/api/audit', require('./modules/audit/routes/audit.routes'));
 app.use('/api/niches', require('./modules/columbarium/routes/niche.routes'));
 app.use('/api/customers', require('./modules/columbarium/routes/customer.routes'));
 app.use('/api/sales', require('./modules/columbarium/routes/sale.routes'));
