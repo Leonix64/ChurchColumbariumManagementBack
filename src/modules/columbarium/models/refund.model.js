@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 /**
- * Modelo de REEMBOLSO (NUEVO)
+ * Modelo de REEMBOLSO
  * Para registrar devoluciones de dinero por cancelaciones
  */
 

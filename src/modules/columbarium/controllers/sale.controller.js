@@ -176,7 +176,7 @@ const saleController = {
             const balanceBefore = sale.balance;
 
             // 4. Calcular distribucion del pago
-            const distribution = this.calculatePaymentDistribution(
+            const distribution = saleController.calculatePaymentDistribution(
                 sale.amortizationTable,
                 amount,
                 paymentMode,

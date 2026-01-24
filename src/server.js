@@ -137,23 +137,6 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log('');
 });
 
-// Apagado graceful
-process.on('SIGTERM', () => {
-    console.log('[INFO] SIGTERM signal received: closing HTTP server');
-    server.close(() => {
-        console.log('[INFO] HTTP server closed');
-        process.exit(0);
-    });
-});
-
-process.on('SIGINT', () => {
-    console.log('[INFO] SIGINT signal received: closing HTTP server');
-    server.close(() => {
-        console.log('[INFO] HTTP server closed');
-        process.exit(0);
-    });
-});
-
 // Errores de promesas no manejadas
 process.on('unhandledRejection', (reason, promise) => {
     console.error('[ERROR] Unhandled Rejection at:', promise);
