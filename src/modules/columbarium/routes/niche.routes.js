@@ -17,6 +17,11 @@ router.get('/stats',
     nicheController.getNicheStats
 );
 
+// Buscar nichos con paginacion
+router.get('/search',
+    nicheController.searchNiches
+);
+
 /**
  * GET /api/niches/available
  * Buscar nichos disponibles

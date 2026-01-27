@@ -177,6 +177,44 @@ const customerController = {
             message: 'Cliente reactivado',
             data: customer
         });
+    }),
+
+    /**
+     * BUSCAR CLIENTES CON PAGINACION
+     * GET /api/customers/search
+     * Query params: search, limit, page
+     */
+    searchCustomers: asyncHandler(async (req, res) => {
+        const { search, limit = 20, page = 1 } = req.query;
+
+        let filter = { active: true };
+
+        if (search) {
+            filter.$or = [
+                { firstName: { $regex: search, $options: 'i' } },
+                { lastName: { $regex: search, $options: 'i' } },
+                { phone: { $regex: search, $options: 'i' } },
+                { rfc: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        const customers = await Customer.find(filter)
+            .limit(parseInt(limit))
+            .skip(skip)
+            .sort({ createdAt: -1 });
+
+        const total = await Customer.countDocuments(filter);
+
+        res.status(200).json({
+            success: true,
+            count: customers.length,
+            total,
+            page: parseInt(page),
+            pages: Math.ceil(total / parseInt(limit)),
+            data: customers
+        });
     })
 };
 

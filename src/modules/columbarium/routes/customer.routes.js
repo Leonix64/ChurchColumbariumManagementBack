@@ -29,6 +29,15 @@ router.get('/',
 );
 
 /**
+ * GET /api/customers/search
+ * Buscar clientes con paginacion
+ * Query params: search, limit, page
+ */
+router.get('/search',
+    customerController.searchCustomers
+);
+
+/**
  * GET /api/customers/:id
  * Obtener cliente por ID
  * Roles: todos los autenticados

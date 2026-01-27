@@ -473,6 +473,45 @@ const nicheController = {
             count: niches.length,
             data: niches
         });
+    }),
+
+    /**
+     * BUSCAR NICHOS POR PAGINACION
+     * GET /api/niches/search
+     * Query params: search, type, limit, page
+     */
+    searchNiches: asyncHandler(async (req, res) => {
+        const { search, type, limit = 20, page = 1 } = req.query;
+
+        let filter = { status: 'available' };
+
+        if (type) filter.type = type;
+
+        if (search) {
+            filter.$or = [
+                { code: { $regex: search, $options: 'i' } },
+                { displayNumber: isNaN(search) ? -1 : parseInt(search) },
+                { module: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        const niches = await Niche.find(filter)
+            .limit(parseInt(limit))
+            .skip(skip)
+            .sort({ displayNumber: 1 });
+
+        const total = await Niche.countDocuments(filter);
+
+        res.status(200).json({
+            success: true,
+            count: niches.length,
+            total,
+            page: parseInt(page),
+            pages: Math.ceil(total / parseInt(limit)),
+            data: niches
+        });
     })
 };
 
