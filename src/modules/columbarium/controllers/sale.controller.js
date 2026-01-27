@@ -382,6 +382,48 @@ const saleController = {
         const { id } = req.params;
         const { reason, refundAmount, refundMethod, refundNotes } = req.body;
 
+        //console.log('Datos recibidos:', { reason, refundAmount, refundMethod, refundNotes });
+
+        // Validar motivo (OBLIGATORIO)
+        if (!reason || typeof reason !== 'string' || reason.trim().length < 10) {
+            return res.status(400).json({
+                success: false,
+                message: 'El motivo debe tener al menos 10 caracteres',
+                details: [{
+                    field: 'reason',
+                    message: 'El motivo es requerido y debe tener al menos 10 caracteres'
+                }]
+            });
+        }
+
+        // Validar refund amount (OPCIONAL, pero si viene debe ser válido)
+        let refundAmountValue = 0;
+        if (refundAmount !== undefined && refundAmount !== null && refundAmount !== '') {
+            refundAmountValue = Number(refundAmount);
+
+            if (isNaN(refundAmountValue)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'El monto de reembolso debe ser un número válido',
+                    details: [{
+                        field: 'refundAmount',
+                        message: 'Debe ser un número válido'
+                    }]
+                });
+            }
+
+            if (refundAmountValue < 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'El monto de reembolso no puede ser negativo',
+                    details: [{
+                        field: 'refundAmount',
+                        message: 'No puede ser negativo'
+                    }]
+                });
+            }
+        }
+
         const session = await mongoose.startSession();
         session.startTransaction();
 
@@ -396,6 +438,13 @@ const saleController = {
                 throw errors.badRequest('La venta ya esta cancelada');
             }
 
+            // Validar que el refund no exceda lo pagado
+            if (refundAmountValue > sale.totalPaid) {
+                throw errors.badRequest(
+                    `El reembolso ($${refundAmountValue}) no puede exceder el total pagado ($${sale.totalPaid})`
+                );
+            }
+
             // 2. Buscar nicho
             const niche = await Niche.findById(sale.niche).session(session);
             if (!niche) {
@@ -403,32 +452,43 @@ const saleController = {
             }
 
             // 3. Cancelar venta
-            sale.cancel(req.user?.id, reason, refundAmount || 0, refundMethod || 'cash', refundNotes);
+            sale.cancel(
+                req.user?.id,
+                reason.trim(),
+                refundAmountValue,
+                refundMethod || 'cash',
+                refundNotes?.trim() || ''
+            );
             await sale.save({ session });
+
+            //console.log('Venta cancelada:', sale);
 
             // 4. Liberar nicho
             niche.status = 'available';
             niche.currentOwner = undefined;
-            niche.notes = `Venta cancelada: ${sale.folio}. Razon: ${reason}`;
+            niche.notes = `Venta cancelada: ${sale.folio}. Razon: ${reason.trim()}`;
             await niche.save({ session });
 
-            // 5. Registrar reembolso (si aplica)
+            //console.log('Nicho liberado:', niche);
+
+            // 5. Registrar reembolso (solo si hay monto)
             let refund = null;
-            if (refundAmount && refundAmount > 0) {
+            if (refundAmountValue > 0) {
                 refund = new Refund({
                     sale: sale._id,
                     customer: sale.customer,
                     refundedBy: req.user?.id,
                     receiptNumber: `REFUND-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-                    amount: refundAmount,
+                    amount: refundAmountValue,
                     method: refundMethod || 'cash',
-                    reason: reason || 'Cancelacion de venta',
-                    notes: refundNotes || '',
+                    reason: reason.trim(),
+                    notes: refundNotes?.trim() || '',
                     refundDate: new Date(),
                     status: 'completed'
                 });
 
                 await refund.save({ session });
+                //console.log('Reembolso registrado:', refund);
             }
 
             // 6. Crear log de auditoría
@@ -445,18 +505,24 @@ const saleController = {
                     folio: sale.folio,
                     nicheId: niche._id,
                     nicheCode: niche.code,
-                    reason,
-                    refundAmount: refundAmount || 0,
-                    refundMethod: refundMethod || 'N/A'
+                    reason: reason.trim(),
+                    refundAmount: refundAmountValue,
+                    refundMethod: refundMethod || 'N/A',
+                    previousStatus: 'active',
+                    newStatus: 'cancelled'
                 },
                 status: 'success',
                 ip: req.ip,
                 userAgent: req.get('user-agent')
             }], { session });
 
+            //console.log('Log de auditoría creado');
+
             // 7. Commit
             await session.commitTransaction();
             session.endSession();
+
+            //console.log('Transacción completada exitosamente');
 
             res.status(200).json({
                 success: true,
@@ -471,6 +537,7 @@ const saleController = {
         } catch (error) {
             await session.abortTransaction();
             session.endSession();
+            //console.error('Error en cancelación:', error);
             throw error;
         }
     }),

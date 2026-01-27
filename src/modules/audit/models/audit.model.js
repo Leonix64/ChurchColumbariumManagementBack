@@ -21,7 +21,7 @@ const AuditSchema = new mongoose.Schema({
             'login', 'logout', 'register',
             'create_customer', 'update_customer', 'delete_customer',
             'update_niche', 'disable_niche', 'enable_niche',
-            'create_sale', 'register_payment', 'create_bulk_sale'
+            'create_sale', 'register_payment', 'create_bulk_sale', 'cancel_sale'
         ]
     },
 
