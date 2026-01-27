@@ -45,8 +45,21 @@ const saleController = {
             let currentDate = new Date();
 
             for (let i = 1; i <= months; i++) {
+                // Crear fecha base
                 let paymentDate = new Date(currentDate);
+                // Agregar meses correctamente
                 paymentDate.setMonth(paymentDate.getMonth() + i);
+
+                /**
+                 * Si el día del mes resultante es menor al día original,
+                 * significa que "retrocedió" (ej: 31 de enero + 1 mes = 28/29 feb)
+                 * En ese caso, ajustar al último día del mes
+                 */
+                const targetMonth = (currentDate.getMonth() + i) % 12;
+                if (paymentDate.getMonth() !== targetMonth && paymentDate.getMonth() !== (targetMonth + 1) % 12) {
+                    // Retrocedio, ajustar al ultimo dia del mes anterior
+                    paymentDate = new Date(paymentDate.getFullYear(), paymentDate.getMonth(), 0);
+                }
 
                 amortizationTable.push({
                     number: i,
