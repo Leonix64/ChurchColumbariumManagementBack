@@ -2,14 +2,14 @@ const mongoose = require('mongoose');
 
 /**
  * Modelo de PAGO
- * Registra cada pago realizado (enganche, mensualidad, etc.)
+ * Registra cada pago realizado (enganche, mensualidad, mantenimiento, etc.)
  */
 
 const PaymentSchema = new mongoose.Schema({
     // Relaciones
     sale: {
         type: mongoose.Schema.Types.ObjectId, ref: 'Sale',
-        required: true,
+        required: false, // Opcional: mantenimiento no tiene venta asociada
         index: true
     },
     customer: {
@@ -42,14 +42,14 @@ const PaymentSchema = new mongoose.Schema({
         }
     },
 
-    // Balance de la venta antes y despues del pago
+    // Balance de la venta antes y despues del pago (solo para pagos de venta)
     balanceBefore: {
         type: Number,
-        required: true
+        required: false
     },
     balanceAfter: {
         type: Number,
-        required: true
+        required: false
     },
 
     // Concepto del pago
@@ -75,7 +75,12 @@ const PaymentSchema = new mongoose.Schema({
     },
 
     // Si es mantenimiento, a que año corresponde?
-    maintenanceYear: { type: Number },
+    maintenanceYear: {
+        type: Number,
+        required: function () {
+            return this.concept === 'maintenance';
+        }
+    },
 
     // Notas del pago
     notes: {
@@ -102,6 +107,7 @@ const PaymentSchema = new mongoose.Schema({
 // Indices
 PaymentSchema.index({ sale: 1, paymentDate: -1 });
 PaymentSchema.index({ customer: 1, paymentDate: -1 });
+PaymentSchema.index({ customer: 1, concept: 1, maintenanceYear: 1 }); // Para buscar mantenimientos
 PaymentSchema.index({ receiptNumber: 1 });
 PaymentSchema.index({ status: 1, createdAt: -1 });
 
@@ -121,6 +127,20 @@ PaymentSchema.methods.cancelPayment = function (userId, reason) {
 
     return this;
 };
+
+// Validación condicional: sale requerido solo para conceptos de venta
+PaymentSchema.pre('validate', function (next) {
+    const ventaConcepts = ['down_payment', 'monthly_payment', 'extra'];
+
+    if (ventaConcepts.includes(this.concept) && !this.sale) {
+        this.invalidate('sale', 'Sale es requerido para pagos de venta');
+    }
+
+    // Si es mantenimiento, asegurarse de que sale NO esté presente
+    if (this.concept === 'maintenance' && this.sale) {
+        this.sale = undefined;
+    }
+});
 
 // Asegurar que virtuals se incluyan en JSON
 PaymentSchema.set('toJSON', { virtuals: true });

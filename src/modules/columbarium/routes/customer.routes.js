@@ -80,4 +80,25 @@ router.patch('/:id/activate',
     customerController.activateCustomer
 );
 
+/**
+ * GET /api/customers/:id/sales
+ * Obtener ventas de un cliente
+ * Roles: todos los autenticados
+ */
+router.get('/:id/sales',
+    columbariumValidator.validateMongoId('id'),
+    customerController.getSalesByCustomer
+);
+
+router.post('/:id/maintenance',
+    authMiddleware.checkRole('admin', 'seller'),
+    columbariumValidator.validateMongoId('id'),
+    customerController.registerMaintenance
+);
+
+router.get('/:id/maintenance',
+    columbariumValidator.validateMongoId('id'),
+    customerController.getMaintenancePayments
+);
+
 module.exports = router;
