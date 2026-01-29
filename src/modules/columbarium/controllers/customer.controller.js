@@ -287,6 +287,22 @@ const customerController = {
             throw errors.badRequest('El cliente está inactivo');
         }
 
+        // Verificar que el cliente tenga ventas activas o pagadas (menos  estricto)
+        const customerSales = await Sale.find({
+            customer: id,
+            status: { $in: ['active', 'paid', 'overdue'] } // Solo ventas validas
+        });
+
+        if (customerSales.length === 0) {
+            throw errors.badRequest('El cliente no tiene compras activas. Solo se puede registrar mantenimiento para clientes con nichos adquiridos.');
+        }
+
+        /* Varificar que tenga al menos 1 venta totalmente pagada (mas estricto)
+        const hasPaidSale = customerSales.some(s => s.status === 'paid');
+        if (!hasPaidSale) {
+            throw errors.badRequest('El cliente debe tener al menos una compra completamente pagada para registrar mantenimiento.');
+        } */
+
         // Verificar si ya existe un pago de mantenimiento para este año
         const existingPayment = await Payment.findOne({
             customer: id,
