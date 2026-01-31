@@ -1,5 +1,57 @@
 const mongoose = require('mongoose');
 
+const BeneficiarySchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: [true, 'El nombre del beneficiario es requerido'],
+        trim: true,
+        minlength: [3, 'El nombre debe tener al menos 3 caracteres'],
+        maxlength: [100, 'El nombre no puede tener más de 100 caracteres']
+    },
+    relationship: {
+        type: String,
+        required: [true, 'La relación es requerida'],
+        enum: [
+            'esposo', 'esposa', 'hijo', 'hija', 'padre', 'madre',
+            'hermano', 'hermana', 'abuelo', 'abuela', 'nieto', 'nieta',
+            'tio', 'tia', 'sobrino', 'sobrina', 'primo', 'prima',
+            'yerno', 'nuera', 'cuñado', 'cuñada', 'otro'
+        ],
+        trim: true
+    },
+    phone: {
+        type: String,
+        trim: true,
+        match: [/^[0-9]{10}$/, 'Teléfono inválido (10 dígitos)']
+    },
+    email: {
+        type: String,
+        lowercase: true,
+        trim: true,
+        match: [/^\S+@\S+\.\S+$/, 'Email inválido']
+    },
+    dateOfBirth: {
+        type: Date
+    },
+    isDeceased: {
+        type: Boolean,
+        default: false
+    },
+    deceasedDate: {
+        type: Date
+    },
+    order: {
+        type: Number,
+        required: [true, 'El orden es requerido'],
+        min: [1, 'El orden debe ser mayor a 0']
+    },
+    notes: {
+        type: String,
+        trim: true,
+        maxlength: [200, 'Las notas no pueden tener más de 200 caracteres']
+    }
+}, { _id: true, timestamps: false });
+
 /**
  * Modelo de CLIENTE
  * Persona que compra/reserva un nicho
@@ -64,10 +116,15 @@ const CustomerSchema = new mongoose.Schema({
     },
 
     // Personas que usaran el nicho
-    beneficiaries: [{
-        type: String,
-        trim: true
-    }],
+    beneficiaries: {
+        type: [BeneficiarySchema],
+        validate: {
+            validator: function (v) {
+                return v && v.length >= 3;
+            },
+            message: 'Debe haber al menos 3 beneficiarios registrados'
+        }
+    },
 
     // Estado del cliente
     active: {
@@ -90,6 +147,7 @@ CustomerSchema.index({
 // Índices compuestos para búsquedas
 CustomerSchema.index({ firstName: 1, lastName: 1 });
 CustomerSchema.index({ active: 1, createdAt: -1 });
+
 
 // Método para obtener nombre completo
 CustomerSchema.virtual('fullName').get(function () {

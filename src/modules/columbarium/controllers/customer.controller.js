@@ -12,6 +12,21 @@ const customerController = {
     createCustomer: asyncHandler(async (req, res) => {
         const { firstName, lastName, phone, email, rfc, address, emergencyContact, beneficiaries } = req.body;
 
+        // Validar que vengan al menos 3 beneficiarios
+        if (!beneficiaries || beneficiaries.length < 3) {
+            throw errors.badRequest('Debe haber al menos 3 beneficiarios registrados');
+        }
+
+        // Validar estructura de beneficiarios
+        beneficiaries.forEach((b, index) => {
+            if (!b.name || !b.relationship) {
+                throw errors.badRequest(`Beneficiario ${index + 1}: nombre y relacion son requeridos`);
+            }
+            if (!b.order) {
+                b.order = index + 1; // Asignar orden automatico
+            }
+        });
+
         // Verificar si ya existe un cliente con el mismo RFC (si se proporciona)
         if (rfc) {
             const existingCustomer = await Customer.findOne({ rfc: rfc.toUpperCase() });
@@ -31,6 +46,25 @@ const customerController = {
             emergencyContact,
             beneficiaries,
             active: true
+        });
+
+        // Auditoría
+        await Audit.create({
+            user: req.user?.id,
+            username: req.user?.username,
+            userRole: req.user?.role,
+            action: 'create_customer',
+            module: 'customer',
+            resourceType: 'Customer',
+            resourceId: newCustomer._id,
+            details: {
+                customerId: newCustomer._id,
+                customerName: `${newCustomer.firstName} ${newCustomer.lastName}`,
+                beneficiariesCount: newCustomer.beneficiaries.length
+            },
+            status: 'success',
+            ip: req.ip,
+            userAgent: req.get('user-agent')
         });
 
         res.status(201).json({
@@ -251,6 +285,134 @@ const customerController = {
             count: sales.length,
             data: sales,
             stats
+        });
+    }),
+
+    /**
+     * ACTUALIZAR BENEFICIARIOS
+     * PUT /api/customers/:id/beneficiaries
+     */
+    updateBeneficiaries: asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        const { beneficiaries } = req.body;
+
+        if (!beneficiaries || beneficiaries.length < 3) {
+            throw errors.badRequest('Se requieren al menos 3 beneficiarios');
+        }
+
+        const customer = await Customer.findById(id);
+        if (!customer) {
+            throw errors.notFound('Cliente');
+        }
+
+        const oldBeneficiaries = customer.beneficiaries;
+        customer.beneficiaries = beneficiaries;
+        await customer.save();
+
+        // Auditoría
+        await Audit.create({
+            user: req.user?.id,
+            username: req.user?.username,
+            userRole: req.user?.role,
+            action: 'update_beneficiaries',
+            module: 'customer',
+            resourceType: 'Customer',
+            resourceId: customer._id,
+            details: {
+                customerId: customer._id,
+                customerName: `${customer.firstName} ${customer.lastName}`,
+                before: { count: oldBeneficiaries.length },
+                after: { count: beneficiaries.length }
+            },
+            status: 'success',
+            ip: req.ip,
+            userAgent: req.get('user-agent')
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Beneficiarios actualizados',
+            data: customer
+        });
+    }),
+
+    /**
+     * MARCAR BENEFICIARIO COMO FALLECIDO
+     * POST /api/customers/:id/beneficiaries/:beneficiaryId/deceased
+     */
+    markBeneficiaryDeceased: asyncHandler(async (req, res) => {
+        const { id, beneficiaryId } = req.params;
+        const { deceasedDate } = req.body;
+
+        const customer = await Customer.findById(id);
+        if (!customer) {
+            throw errors.notFound('Cliente');
+        }
+
+        const beneficiary = customer.beneficiaries.id(beneficiaryId);
+        if (!beneficiary) {
+            throw errors.notFound('Beneficiario');
+        }
+
+        if (beneficiary.isDeceased) {
+            throw errors.badRequest('El beneficiario ya está marcado como fallecido');
+        }
+
+        beneficiary.isDeceased = true;
+        beneficiary.deceasedDate = deceasedDate || new Date();
+        await customer.save();
+
+        // Auditoría
+        await Audit.create({
+            user: req.user?.id,
+            username: req.user?.username,
+            userRole: req.user?.role,
+            action: 'mark_beneficiary_deceased',
+            module: 'customer',
+            resourceType: 'Customer',
+            resourceId: customer._id,
+            details: {
+                customerId: customer._id,
+                beneficiaryName: beneficiary.name,
+                deceasedDate: beneficiary.deceasedDate
+            },
+            status: 'success',
+            ip: req.ip,
+            userAgent: req.get('user-agent')
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Beneficiario marcado como fallecido',
+            data: customer
+        });
+    }),
+
+    /**
+     * OBTENER PRÓXIMO BENEFICIARIO VIVO
+     * GET /api/customers/:id/next-beneficiary
+     */
+    getNextBeneficiary: asyncHandler(async (req, res) => {
+        const { id } = req.params;
+
+        const customer = await Customer.findById(id);
+        if (!customer) {
+            throw errors.notFound('Cliente');
+        }
+
+        const nextBeneficiary = customer.getNextBeneficiary();
+
+        if (!nextBeneficiary) {
+            return res.status(200).json({
+                success: true,
+                message: 'No hay beneficiarios vivos disponibles',
+                data: null
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: nextBeneficiary
         });
     })
 };

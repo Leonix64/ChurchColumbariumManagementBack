@@ -1,5 +1,35 @@
 const mongoose = require('mongoose');
 
+const OwnershipHistorySchema = new mongoose.Schema({
+    owner: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Customer',
+        required: true
+    },
+    startDate: {
+        type: Date,
+        required: true,
+        default: Date.now
+    },
+    endDate: {
+        type: Date
+    },
+    reason: {
+        type: String,
+        enum: ['purchase', 'succession', 'transfer', 'inheritance'],
+        required: true
+    },
+    notes: {
+        type: String,
+        trim: true,
+        maxlength: [500, 'Las notas no pueden tener más de 500 caracteres']
+    },
+    registeredBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }
+}, { _id: true, timestamps: true });
+
 /**
  * Modelo de NICHO
  * Representa cada espacio del columbario
@@ -97,6 +127,11 @@ const NicheSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Deceased'
     }],
+
+    ownershipHistory: {
+        type: [OwnershipHistorySchema],
+        default: []
+    },
 
     // Informacion adicional
     notes: {

@@ -90,4 +90,33 @@ router.get('/:id/sales',
     customerController.getSalesByCustomer
 );
 
+/**
+ * PUT /api/customers/:id/beneficiaries
+ * Actualizar beneficiarios
+ */
+router.put('/:id/beneficiaries',
+    authMiddleware.checkRole('admin', 'seller'),
+    columbariumValidator.validateMongoId('id'),
+    customerController.updateBeneficiaries
+);
+
+/**
+ * POST /api/customers/:id/beneficiaries/:beneficiaryId/deceased
+ * Marcar beneficiario como fallecido
+ */
+router.post('/:id/beneficiaries/:beneficiaryId/deceased',
+    authMiddleware.checkRole('admin', 'seller'),
+    columbariumValidator.validateMongoId('id'),
+    customerController.markBeneficiaryDeceased
+);
+
+/**
+ * GET /api/customers/:id/next-beneficiary
+ * Obtener próximo beneficiario vivo
+ */
+router.get('/:id/next-beneficiary',
+    columbariumValidator.validateMongoId('id'),
+    customerController.getNextBeneficiary
+);
+
 module.exports = router;

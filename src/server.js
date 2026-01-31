@@ -28,6 +28,7 @@ app.use('/api/niches', require('./modules/columbarium/routes/niche.routes'));
 app.use('/api/customers', require('./modules/columbarium/routes/customer.routes'));
 app.use('/api/maintenance', require('./modules/columbarium/routes/maintenance.routes'));
 app.use('/api/sales', require('./modules/columbarium/routes/sale.routes'));
+app.use('/api/succession', require('./modules/columbarium/routes/succession.routes'));
 
 // Ruta de prueba
 app.get('/', (req, res) => {
