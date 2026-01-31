@@ -14,7 +14,12 @@ const PaymentSchema = new mongoose.Schema({
     },
     customer: {
         type: mongoose.Schema.Types.ObjectId, ref: 'Customer',
-        required: true,
+        required: false,
+        index: true
+    },
+    niche: {
+        type: mongoose.Schema.Types.ObjectId, ref: 'Niche',
+        required: false,
         index: true
     },
     registeredBy: {
@@ -107,7 +112,7 @@ const PaymentSchema = new mongoose.Schema({
 // Indices
 PaymentSchema.index({ sale: 1, paymentDate: -1 });
 PaymentSchema.index({ customer: 1, paymentDate: -1 });
-PaymentSchema.index({ customer: 1, concept: 1, maintenanceYear: 1 }); // Para buscar mantenimientos
+PaymentSchema.index({ niche: 1, concept: 1, maintenanceYear: 1 }); // Para buscar mantenimientos
 PaymentSchema.index({ receiptNumber: 1 });
 PaymentSchema.index({ status: 1, createdAt: -1 });
 
@@ -129,16 +134,28 @@ PaymentSchema.methods.cancelPayment = function (userId, reason) {
 };
 
 // Validación condicional: sale requerido solo para conceptos de venta
-PaymentSchema.pre('validate', function (next) {
+PaymentSchema.pre('validate', function () {
     const ventaConcepts = ['down_payment', 'monthly_payment', 'extra'];
 
-    if (ventaConcepts.includes(this.concept) && !this.sale) {
-        this.invalidate('sale', 'Sale es requerido para pagos de venta');
+    // Para pagos de venta: sale Y customer son requeridos
+    if (ventaConcepts.includes(this.concept)) {
+        if (!this.sale) {
+            this.invalidate('sale', 'Sale es requerido para pagos de venta');
+        }
+        if (!this.customer) {
+            this.invalidate('customer', 'Customer es requerido para pagos de venta');
+        }
     }
 
-    // Si es mantenimiento, asegurarse de que sale NO esté presente
-    if (this.concept === 'maintenance' && this.sale) {
-        this.sale = undefined;
+    // Para mantenimiento: niche es requerido, sale NO debe estar
+    if (this.concept === 'maintenance') {
+        if (!this.niche) {
+            this.invalidate('niche', 'Niche es requerido para pagos de mantenimiento');
+        }
+        if (this.sale) {
+            this.sale = undefined;
+        }
+        // Customer se auto-completa del propietario actual del nicho
     }
 });
 

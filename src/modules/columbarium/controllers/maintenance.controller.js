@@ -1,5 +1,5 @@
+const Niche = require('../models/niche.model');
 const Customer = require('../models/customer.model');
-const Sale = require('../models/sale.model');
 const Payment = require('../models/payment.model');
 const Audit = require('../../audit/models/audit.model');
 const { asyncHandler, errors } = require('../../../middlewares/errorHandler');
@@ -7,13 +7,13 @@ const { asyncHandler, errors } = require('../../../middlewares/errorHandler');
 const maintenanceController = {
     /**
      * REGISTRAR PAGO DE MANTENIMIENTO
-     * POST /api/customers/:id/maintenance
+     * POST /api/niches/:id/maintenance
      */
     registerMaintenance: asyncHandler(async (req, res) => {
         const { id } = req.params;
         const { year, amount, method, notes } = req.body;
 
-        // Validaciones
+        // Validaciones básicas
         if (!year || !amount || !method) {
             throw errors.badRequest('Año, monto y método de pago son requeridos');
         }
@@ -22,53 +22,47 @@ const maintenanceController = {
             throw errors.badRequest('El monto debe ser mayor a 0');
         }
 
-        // Validar que el año sea válido (no mayor al actual + 1)
+        // Validar que el año sea válido
         const currentYear = new Date().getFullYear();
         if (year > currentYear + 1) {
             throw errors.badRequest(`El año no puede ser mayor a ${currentYear + 1}`);
         }
 
-        // Buscar cliente
-        const customer = await Customer.findById(id);
-        if (!customer) {
-            throw errors.notFound('Cliente');
+        // Buscar nicho
+        const niche = await Niche.findById(id).populate('currentOwner', 'firstName lastName phone email');
+
+        if (!niche) {
+            throw errors.notFound('Nicho');
         }
 
-        if (!customer.active) {
-            throw errors.badRequest('El cliente está inactivo');
+        // Verificar que el nicho esté vendido
+        if (niche.status !== 'sold') {
+            throw errors.badRequest('Solo se puede registrar mantenimiento para nichos vendidos');
         }
 
-        // Verificar que el cliente tenga ventas activas o pagadas (menos  estricto)
-        const customerSales = await Sale.find({
-            customer: id,
-            status: { $in: ['active', 'paid', 'overdue'] } // Solo ventas validas
-        });
-
-        if (customerSales.length === 0) {
-            throw errors.badRequest('El cliente no tiene compras activas. Solo se puede registrar mantenimiento para clientes con nichos adquiridos.');
+        // Verificar que tenga propietario
+        if (!niche.currentOwner) {
+            throw errors.badRequest('El nicho no tiene propietario registrado');
         }
 
-        /* Varificar que tenga al menos 1 venta totalmente pagada (mas estricto)
-        const hasPaidSale = customerSales.some(s => s.status === 'paid');
-        if (!hasPaidSale) {
-            throw errors.badRequest('El cliente debe tener al menos una compra completamente pagada para registrar mantenimiento.');
-        } */
+        const owner = niche.currentOwner;
 
-        // Verificar si ya existe un pago de mantenimiento para este año
+        // Verificar si ya existe un pago de mantenimiento para este nicho en este año
         const existingPayment = await Payment.findOne({
-            customer: id,
+            niche: id,
             concept: 'maintenance',
             maintenanceYear: year
         });
 
         if (existingPayment) {
-            throw errors.conflict(`Ya existe un pago de mantenimiento registrado para el año ${year}`);
+            throw errors.conflict(`Ya existe un pago de mantenimiento registrado para este nicho en el año ${year}`);
         }
 
         // Crear pago de mantenimiento
         const maintenancePayment = await Payment.create({
-            customer: id,
-            sale: null, // No está asociado a una venta
+            niche: id,
+            customer: owner._id, // Propietario ACTUAL al momento del pago
+            sale: null,
             registeredBy: req.user?.id,
             receiptNumber: `MANT-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
             amount,
@@ -76,7 +70,7 @@ const maintenanceController = {
             method,
             maintenanceYear: year,
             paymentDate: new Date(),
-            notes: notes || '',
+            notes: notes || `Mantenimiento anual - Nicho ${niche.code}`,
             balanceBefore: 0,
             balanceAfter: 0
         });
@@ -91,8 +85,10 @@ const maintenanceController = {
             resourceType: 'Payment',
             resourceId: maintenancePayment._id,
             details: {
-                customerId: id,
-                customerName: `${customer.firstName} ${customer.lastName}`,
+                nicheId: id,
+                nicheCode: niche.code,
+                customerId: owner._id,
+                customerName: `${owner.firstName} ${owner.lastName}`,
                 paymentId: maintenancePayment._id,
                 receiptNumber: maintenancePayment.receiptNumber,
                 amount,
@@ -107,16 +103,63 @@ const maintenanceController = {
 
         res.status(201).json({
             success: true,
-            message: `Pago de mantenimiento registrado para el año ${year}`,
-            data: maintenancePayment
+            message: `Pago de mantenimiento registrado para el nicho ${niche.code} (año ${year})`,
+            data: {
+                payment: maintenancePayment,
+                niche: {
+                    code: niche.code,
+                    displayNumber: niche.displayNumber,
+                    module: niche.module,
+                    section: niche.section
+                },
+                owner: {
+                    name: `${owner.firstName} ${owner.lastName}`,
+                    phone: owner.phone,
+                    email: owner.email
+                }
+            }
         });
     }),
 
     /**
-     * OBTENER PAGOS DE MANTENIMIENTO DE UN CLIENTE
-     * GET /api/customers/:id/maintenance
+     * OBTENER PAGOS DE MANTENIMIENTO DE UN NICHO
+     * GET /api/niches/:id/maintenance
      */
     getMaintenancePayments: asyncHandler(async (req, res) => {
+        const { id } = req.params;
+
+        const niche = await Niche.findById(id);
+        if (!niche) {
+            throw errors.notFound('Nicho');
+        }
+
+        // Buscar todos los pagos de mantenimiento del nicho
+        const maintenancePayments = await Payment.find({
+            niche: id,
+            concept: 'maintenance'
+        })
+            .populate('customer', 'firstName lastName phone email')
+            .populate('registeredBy', 'username fullName')
+            .sort({ maintenanceYear: -1, paymentDate: -1 });
+
+        res.status(200).json({
+            success: true,
+            count: maintenancePayments.length,
+            niche: {
+                code: niche.code,
+                displayNumber: niche.displayNumber,
+                module: niche.module
+            },
+            data: maintenancePayments
+        });
+    }),
+
+    /**
+     * OBTENER HISTORIAL DE MANTENIMIENTO POR CLIENTE
+     * GET /api/customers/:id/maintenance-history
+     * (Útil para ver qué mantenimientos pagó un cliente, aunque el nicho ya no sea suyo)
+     */
+    getCustomerMaintenanceHistory: asyncHandler(async (req, res) => {
         const { id } = req.params;
 
         const customer = await Customer.findById(id);
@@ -124,17 +167,22 @@ const maintenanceController = {
             throw errors.notFound('Cliente');
         }
 
-        // Buscar todos los pagos de mantenimiento del cliente
+        // Buscar pagos de mantenimiento donde este cliente fue el que pagó
         const maintenancePayments = await Payment.find({
             customer: id,
             concept: 'maintenance'
         })
+            .populate('niche', 'code displayNumber module section currentOwner')
             .populate('registeredBy', 'username fullName')
-            .sort({ maintenanceYear: -1, paymentDate: -1 });
+            .sort({ paymentDate: -1 });
 
         res.status(200).json({
             success: true,
             count: maintenancePayments.length,
+            customer: {
+                name: `${customer.firstName} ${customer.lastName}`,
+                phone: customer.phone
+            },
             data: maintenancePayments
         });
     })
