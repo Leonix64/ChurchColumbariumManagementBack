@@ -5,98 +5,175 @@ const config = require('../config/env');
 
 mongoose.set('strictQuery', true);
 
-const createAdminUser = async () => {
+const createInitialUsers = async () => {
     try {
-        console.log('[INFO] Connecting to MongoDB Atlas...\n');
+        console.log('[INFO] Conectando a MongoDB Atlas...\n');
 
         await mongoose.connect(config.db.uri, {
             serverSelectionTimeoutMS: 5000,
             socketTimeoutMS: 45000,
         });
 
-        console.log('[SUCCESS] Connected to MongoDB Atlas\n');
+        console.log('[SUCCESS] Conectado a MongoDB Atlas\n');
 
-        const existingAdmin = await User.findOne({ username: 'admin' });
+        // Verificar si ya existen usuarios
+        const existingUsers = await User.find({});
 
-        if (existingAdmin) {
-            console.log('[WARNING] Admin user already exists:');
-            console.log(`  Username: ${existingAdmin.username}`);
-            console.log(`  Email: ${existingAdmin.email}`);
-            console.log(`  ID: ${existingAdmin._id}`);
-            console.log('\n[INFO] To create another admin:');
-            console.log('  - Use POST /api/auth/register as admin');
-            console.log('\n[INFO] To recreate admin:');
-            console.log('  1. Delete existing user from MongoDB Atlas');
-            console.log('  2. Run: npm run seed:admin\n');
+        if (existingUsers.length > 0) {
+            console.log('[WARNING] Ya existen usuarios en la base de datos:');
+            existingUsers.forEach(u => {
+                console.log(`  • ${u.username} (${u.role}) - ${u.email}`);
+            });
+            console.log('\n[INFO] Para recrear usuarios:');
+            console.log('  1. Elimina los usuarios existentes desde MongoDB Atlas');
+            console.log('  2. Ejecuta: npm run seed:users\n');
             await mongoose.disconnect();
             return;
         }
 
-        const plainPassword = process.env.ADMIN_PASSWORD || 'Admin123!';
-        const adminUsername = process.env.ADMIN_USERNAME || 'admin';
-        const adminEmail = process.env.ADMIN_EMAIL || 'admin@columbario.com';
-        const adminFullName = process.env.ADMIN_FULLNAME || 'System Administrator';
+        console.log('='.repeat(70));
+        console.log('CREANDO USUARIOS INICIALES DEL SISTEMA');
+        console.log('='.repeat(70));
+        console.log('');
 
-        console.log('[INFO] Creating administrator user...\n');
-        console.log('Admin Details:');
-        console.log(`  Username: ${adminUsername}`);
-        console.log(`  Email: ${adminEmail}`);
-        console.log(`  Password: ${plainPassword} ${plainPassword === 'Admin123!' ? '(CHANGE AFTER LOGIN)' : ''}`);
-        console.log(`  Role: admin`);
-        console.log('\n[IMPORTANT] Change password after first login.\n');
+        const users = [
+            {
+                username: 'admin',
+                email: 'admin@columbario.com',
+                password: 'Admin123!',
+                fullName: 'Administrador del Sistema',
+                phone: '4491234567',
+                role: 'admin',
+                isActive: true,
+                tokenVersion: 0
+            },
+            {
+                username: 'vendedor1',
+                email: 'vendedor@columbario.com',
+                password: 'Vendedor123!',
+                fullName: 'María González Pérez',
+                phone: '4497654321',
+                role: 'seller',
+                isActive: true,
+                tokenVersion: 0
+            },
+            {
+                username: 'consulta',
+                email: 'consulta@columbario.com',
+                password: 'Consulta123!',
+                fullName: 'Roberto Martínez López',
+                phone: '4498765432',
+                role: 'viewer',
+                isActive: true,
+                tokenVersion: 0
+            }
+        ];
 
-        const adminData = {
-            username: adminUsername,
-            email: adminEmail,
-            password: plainPassword,
-            fullName: adminFullName,
-            role: 'admin',
-            isActive: true,
-            tokenVersion: 0
-        };
+        console.log('[INFO] Creando usuarios...\n');
 
-        await User.create(adminData);
+        const createdUsers = [];
 
-        console.log('[SUCCESS] Admin user created successfully!\n');
-        console.log('Access Credentials:');
-        console.log(`  URL: http://localhost:${config.server.port}`);
-        console.log(`  Username: ${adminUsername}`);
-        console.log(`  Password: ${plainPassword}`);
-        console.log('\nAvailable Endpoints:');
-        console.log('  POST /api/auth/login - Login');
-        console.log('  POST /api/auth/change-password - Change password');
-        console.log('  GET  /api/auth/admin/users - List users');
+        for (const userData of users) {
+            const user = await User.create(userData);
+            createdUsers.push(user);
+            console.log(`✅ Usuario creado: ${user.username} (${user.role})`);
+        }
 
-        console.log('\nLogin Example:');
-        console.log('  Method: POST');
-        console.log(`  URL: http://localhost:${config.server.port}/api/auth/login`);
-        console.log('  Body:');
+        console.log('\n' + '='.repeat(70));
+        console.log('USUARIOS CREADOS EXITOSAMENTE');
+        console.log('='.repeat(70));
+        console.log('');
+
+        console.log('📋 CREDENCIALES DE ACCESO:\n');
+
+        createdUsers.forEach((user, index) => {
+            const originalPassword = users[index].password;
+            console.log(`${index + 1}. ${user.role.toUpperCase()}`);
+            console.log('   ─'.repeat(35));
+            console.log(`   Nombre:     ${user.fullName}`);
+            console.log(`   Usuario:    ${user.username}`);
+            console.log(`   Email:      ${user.email}`);
+            console.log(`   Contraseña: ${originalPassword}`);
+            console.log(`   Teléfono:   ${user.phone}`);
+            console.log(`   ID:         ${user._id}`);
+            console.log('');
+        });
+
+        console.log('='.repeat(70));
+        console.log('PERMISOS POR ROL:');
+        console.log('='.repeat(70));
+        console.log('');
+
+        console.log('👑 ADMIN:');
+        console.log('   • Acceso total al sistema');
+        console.log('   • Crear, editar y eliminar usuarios');
+        console.log('   • Gestionar todos los módulos');
+        console.log('   • Ver logs de auditoría');
+        console.log('   • Configuración del sistema');
+        console.log('');
+
+        console.log('💼 SELLER (Vendedor):');
+        console.log('   • Registrar ventas');
+        console.log('   • Gestionar clientes');
+        console.log('   • Registrar pagos');
+        console.log('   • Ver información de nichos');
+        console.log('   • Registrar mantenimientos');
+        console.log('');
+
+        console.log('👁️  VIEWER (Consulta):');
+        console.log('   • Solo lectura de información');
+        console.log('   • Ver clientes');
+        console.log('   • Ver ventas');
+        console.log('   • Ver nichos');
+        console.log('   • NO puede modificar datos');
+        console.log('');
+
+        console.log('='.repeat(70));
+        console.log('EJEMPLO DE LOGIN:');
+        console.log('='.repeat(70));
+        console.log('');
+        console.log(`POST http://localhost:${config.server.port}/api/auth/login`);
+        console.log('Content-Type: application/json\n');
         console.log(JSON.stringify({
-            username: adminUsername,
-            password: plainPassword
+            username: 'admin',
+            password: 'Admin123!'
         }, null, 2));
+        console.log('');
 
-        console.log('\n[SECURITY]');
-        console.log('  1. Login immediately');
-        console.log('  2. Change password via /api/auth/change-password');
-        console.log('  3. Update ADMIN_PASSWORD in .env\n');
+        console.log('='.repeat(70));
+        console.log('⚠️  IMPORTANTE - SEGURIDAD:');
+        console.log('='.repeat(70));
+        console.log('');
+        console.log('1. CAMBIA TODAS LAS CONTRASEÑAS después del primer login');
+        console.log('   Endpoint: POST /api/auth/change-password');
+        console.log('');
+        console.log('2. Guarda las credenciales en un lugar seguro');
+        console.log('');
+        console.log('3. NO compartas estas contraseñas por medios inseguros');
+        console.log('');
+        console.log('4. Actualiza las variables de entorno en .env:');
+        console.log('   ADMIN_PASSWORD=<nueva_contraseña_segura>');
+        console.log('');
+
+        console.log('='.repeat(70));
+        console.log('');
 
         await mongoose.disconnect();
-        console.log('[INFO] Connection closed\n');
+        console.log('[INFO] Conexión cerrada\n');
         process.exit(0);
 
     } catch (error) {
-        console.error('\n[ERROR] Failed to create admin:', error.message);
+        console.error('\n[ERROR] Error al crear usuarios:', error.message);
 
         if (error.code === 11000) {
-            console.log('\n[CONFLICT] Username or email already exists');
-            console.log('[SOLUTION] Delete existing user from MongoDB Atlas');
+            console.log('\n[CONFLICT] Ya existe un usuario con ese username o email');
+            console.log('[SOLUTION] Elimina los usuarios existentes desde MongoDB Atlas');
         }
 
         if (error.name === 'ValidationError') {
             console.log('\n[VALIDATION ERROR]');
             Object.values(error.errors).forEach(err => {
-                console.log(`  - ${err.path}: ${err.message}`);
+                console.log(`  • ${err.path}: ${err.message}`);
             });
         }
 
@@ -105,4 +182,4 @@ const createAdminUser = async () => {
     }
 };
 
-createAdminUser();
+createInitialUsers();
