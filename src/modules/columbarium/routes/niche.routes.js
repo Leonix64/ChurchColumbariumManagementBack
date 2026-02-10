@@ -96,7 +96,7 @@ router.patch('/:id/price',
 );
 
 // Deshabilitar nichos
-router.post('/disable',
+router.post('/:id/disable',
     authMiddleware.checkRole('admin'),
     nicheController.disableNiches
 );
