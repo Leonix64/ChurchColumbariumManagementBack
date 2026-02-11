@@ -391,71 +391,66 @@ const nicheController = {
     }),
 
     /**
-     * CREAR NUEVOS NICHOS
+     * CREAR UN NICHO
      * POST /api/niches
-     * Body: { module, section, rows, nichesPerRow, startNumber, marbleFrom, prices }
+     * Body: { module, section, row, displayNumber, type, price }
+     * El campo "number" (posición en la fila) se calcula automáticamente
      */
-    createNiches: asyncHandler(async (req, res) => {
-        const {
+    createNiche: asyncHandler(async (req, res) => {
+        const { module, section, row, displayNumber, type, price } = req.body;
+
+        // Validaciones
+        if (!module || !section) {
+            throw errors.badRequest('Módulo y sección son requeridos');
+        }
+        if (!row || row < 1) {
+            throw errors.badRequest('La fila debe ser mayor a 0');
+        }
+        if (!displayNumber || displayNumber < 1) {
+            throw errors.badRequest('El número visible debe ser mayor a 0');
+        }
+        if (!['wood', 'marble', 'special'].includes(type)) {
+            throw errors.badRequest('El material debe ser: wood, marble o special');
+        }
+        if (price === undefined || price === null || price < 0) {
+            throw errors.badRequest('El precio es requerido');
+        }
+
+        // Verificar que el displayNumber no esté repetido en el mismo módulo-sección
+        const duplicateNumber = await Niche.findOne({ module, section, displayNumber });
+        if (duplicateNumber) {
+            throw errors.conflict(`Ya existe el nicho #${displayNumber} en módulo ${module}, sección ${section}`);
+        }
+
+        // Calcular posición automática: cuántos nichos hay en esa fila + 1
+        const nichesInRow = await Niche.countDocuments({ module, section, row });
+        const number = nichesInRow + 1;
+
+        // Generar código automático
+        const code = `${module}-${section}-${row}-${displayNumber}`;
+
+        // Verificar que el código no exista (por si acaso)
+        const existingCode = await Niche.findOne({ code });
+        if (existingCode) {
+            throw errors.conflict(`Ya existe un nicho con el código ${code}`);
+        }
+
+        const niche = await Niche.create({
+            code,
+            displayNumber,
             module,
             section,
-            rows,
-            nichesPerRow,
-            startNumber = 1,
-            marbleFrom = 999,
-            prices = { wood: 30000, marble: 35000 }
-        } = req.body;
-
-        if (!module || !section || !rows || !nichesPerRow) {
-            throw errors.badRequest('Faltan datos requeridos');
-        }
-
-        if (rows < 1 || nichesPerRow < 1) {
-            throw errors.badRequest('Filas y nichos por fila deben ser mayores a 0');
-        }
-
-        const existing = await Niche.findOne({ module, section });
-        if (existing) {
-            throw errors.conflict(`Ya existe el módulo ${module}, sección ${section}`);
-        }
-
-        const niches = [];
-        let globalNumber = startNumber;
-
-        for (let row = 1; row <= rows; row++) {
-            for (let col = 1; col <= nichesPerRow; col++) {
-                const isMarble = col >= marbleFrom;
-                const type = isMarble ? 'marble' : 'wood';
-                const price = isMarble ? prices.marble : prices.wood;
-
-                niches.push({
-                    code: `${module}-${section}-${row}-${globalNumber}`,
-                    displayNumber: globalNumber,
-                    module,
-                    section,
-                    row,
-                    number: col,
-                    type,
-                    price,
-                    status: 'available'
-                });
-
-                globalNumber++;
-            }
-        }
-
-        const created = await Niche.insertMany(niches);
+            row,
+            number,
+            type,
+            price,
+            status: 'available'
+        });
 
         res.status(201).json({
             success: true,
-            message: `${created.length} nichos creados`,
-            data: {
-                module,
-                section,
-                total: created.length,
-                wood: created.filter(n => n.type === 'wood').length,
-                marble: created.filter(n => n.type === 'marble').length
-            }
+            message: `Nicho #${displayNumber} creado en Módulo ${module}, Sección ${section}, Fila ${row}`,
+            data: niche
         });
     }),
 

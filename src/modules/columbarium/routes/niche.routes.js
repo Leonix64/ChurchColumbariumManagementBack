@@ -41,6 +41,12 @@ router.get('/code/:code',
     nicheController.getNicheByCode
 );
 
+// Listar nichos deshabilitados (DEBE ir antes de /:id)
+router.get('/disabled',
+    authMiddleware.checkRole('admin', 'seller'),
+    nicheController.getDisabledNiches
+);
+
 /**
  * GET /api/niches/:id
  * Obtener nicho por ID
@@ -107,16 +113,10 @@ router.post('/enable',
     nicheController.enableNiches
 );
 
-// Crear nichos nuevos
+// Crear nicho individual
 router.post('/',
     authMiddleware.checkRole('admin'),
-    nicheController.createNiches
-);
-
-// Listar nichos deshabilitados
-router.get('/disabled',
-    authMiddleware.checkRole('admin', 'seller'),
-    nicheController.getDisabledNiches
+    nicheController.createNiche
 );
 
 module.exports = router;
