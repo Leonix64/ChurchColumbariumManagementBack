@@ -1,4 +1,5 @@
 const Niche = require('../models/niche.model');
+const Audit = require('../../audit/models/audit.model');
 const { asyncHandler, errors } = require('../../../middlewares/errorHandler');
 
 const nicheController = {
@@ -98,6 +99,20 @@ const nicheController = {
         if (!niche) {
             throw errors.notFound('Nicho');
         }
+
+        // Auditoría
+        await Audit.create({
+            user: req.user.id,
+            username: req.user.username,
+            userRole: req.user.role,
+            action: 'update_niche',
+            module: 'niche',
+            resourceType: 'Niche',
+            resourceId: niche._id,
+            details: { code: niche.code, updates: { status, notes } },
+            ip: req.ip,
+            userAgent: req.get('user-agent')
+        });
 
         res.status(200).json({
             success: true,
@@ -213,6 +228,20 @@ const nicheController = {
         niche.price = price;
         await niche.save();
 
+        // Auditoría
+        await Audit.create({
+            user: req.user.id,
+            username: req.user.username,
+            userRole: req.user.role,
+            action: 'change_material',
+            module: 'niche',
+            resourceType: 'Niche',
+            resourceId: niche._id,
+            details: { code: niche.code, oldType, newType: type, oldPrice, newPrice: price },
+            ip: req.ip,
+            userAgent: req.get('user-agent')
+        });
+
         res.json({
             success: true,
             message: 'Material actualizado',
@@ -263,6 +292,18 @@ const nicheController = {
         const updated = await Niche.find({ _id: { $in: nicheIds } })
             .select('code displayNumber type price');
 
+        // Auditoría
+        await Audit.create({
+            user: req.user.id,
+            username: req.user.username,
+            userRole: req.user.role,
+            action: 'bulk_change_material',
+            module: 'niche',
+            details: { count: result.modifiedCount, type, price, codes: updated.map(n => n.code) },
+            ip: req.ip,
+            userAgent: req.get('user-agent')
+        });
+
         res.json({
             success: true,
             message: `${result.modifiedCount} nicho(s) actualizados a ${type}`,
@@ -295,6 +336,20 @@ const nicheController = {
         const oldPrice = niche.price;
         niche.price = price;
         await niche.save();
+
+        // Auditoría
+        await Audit.create({
+            user: req.user.id,
+            username: req.user.username,
+            userRole: req.user.role,
+            action: 'change_price',
+            module: 'niche',
+            resourceType: 'Niche',
+            resourceId: niche._id,
+            details: { code: niche.code, oldPrice, newPrice: price },
+            ip: req.ip,
+            userAgent: req.get('user-agent')
+        });
 
         res.json({
             success: true,
@@ -349,6 +404,18 @@ const nicheController = {
         const updated = await Niche.find({ _id: { $in: nicheIds } })
             .select('code displayNumber module section status');
 
+        // Auditoría
+        await Audit.create({
+            user: req.user.id,
+            username: req.user.username,
+            userRole: req.user.role,
+            action: 'disable_niche',
+            module: 'niche',
+            details: { count: result.modifiedCount, reason: reason.trim(), codes: updated.map(n => n.code) },
+            ip: req.ip,
+            userAgent: req.get('user-agent')
+        });
+
         res.json({
             success: true,
             message: `${result.modifiedCount} nicho(s) deshabilitado(s)`,
@@ -382,6 +449,18 @@ const nicheController = {
 
         const updated = await Niche.find({ _id: { $in: nicheIds } })
             .select('code displayNumber module section status');
+
+        // Auditoría
+        await Audit.create({
+            user: req.user.id,
+            username: req.user.username,
+            userRole: req.user.role,
+            action: 'enable_niche',
+            module: 'niche',
+            details: { count: result.modifiedCount, codes: updated.map(n => n.code) },
+            ip: req.ip,
+            userAgent: req.get('user-agent')
+        });
 
         res.json({
             success: true,
@@ -445,6 +524,20 @@ const nicheController = {
             type,
             price,
             status: 'available'
+        });
+
+        // Auditoría
+        await Audit.create({
+            user: req.user.id,
+            username: req.user.username,
+            userRole: req.user.role,
+            action: 'create_niche',
+            module: 'niche',
+            resourceType: 'Niche',
+            resourceId: niche._id,
+            details: { code, displayNumber, module, section, row, type, price },
+            ip: req.ip,
+            userAgent: req.get('user-agent')
         });
 
         res.status(201).json({

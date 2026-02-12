@@ -48,9 +48,9 @@ const createInitialUsers = async () => {
                 tokenVersion: 0
             },
             {
-                username: 'vendedor1',
-                email: 'vendedor@columbario.com',
-                password: 'Vendedor123!',
+                username: 'seller01',
+                email: 'seller01@columbario.com',
+                password: 'Seller123!',
                 fullName: 'María González Pérez',
                 phone: '4497654321',
                 role: 'seller',
@@ -58,9 +58,9 @@ const createInitialUsers = async () => {
                 tokenVersion: 0
             },
             {
-                username: 'consulta',
-                email: 'consulta@columbario.com',
-                password: 'Consulta123!',
+                username: 'viewer01',
+                email: 'viewer01@columbario.com',
+                password: 'Viewer123!',
                 fullName: 'Roberto Martínez López',
                 phone: '4498765432',
                 role: 'viewer',

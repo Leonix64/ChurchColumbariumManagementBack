@@ -18,11 +18,19 @@ const AuditSchema = new mongoose.Schema({
         type: String,
         required: true,
         enum: [
-            'login', 'logout', 'register',
+            // Auth
+            'login', 'logout', 'register', 'change_password',
+            // Clientes
             'create_customer', 'update_customer', 'delete_customer',
-            'update_niche', 'disable_niche', 'enable_niche',
+            'update_beneficiaries', 'mark_beneficiary_deceased',
+            // Nichos
+            'create_niche', 'update_niche', 'disable_niche', 'enable_niche',
+            'change_material', 'bulk_change_material', 'change_price',
+            // Ventas
             'create_sale', 'register_payment', 'create_bulk_sale', 'cancel_sale',
-            'register_maintenance', 'update_beneficiaries', 'mark_beneficiary_deceased',
+            // Mantenimiento
+            'register_maintenance',
+            // Sucesión
             'register_succession', 'manual_transfer'
         ]
     },

@@ -1,4 +1,5 @@
 const User = require('../models/user.model');
+const Audit = require('../../audit/models/audit.model');
 const jwt = require('jsonwebtoken');
 const config = require('../../../config/env');
 const { errors, asyncHandler } = require('../../../middlewares/errorHandler');
@@ -57,6 +58,24 @@ const authController = {
             role: newUser.role,
             createdAt: newUser.createdAt
         };
+
+        // Auditoría
+        await Audit.create({
+            user: req.user?.id || newUser._id,
+            username: req.user?.username || newUser.username,
+            userRole: req.user?.role || newUser.role,
+            action: 'register',
+            module: 'auth',
+            resourceType: 'User',
+            resourceId: newUser._id,
+            details: {
+                registeredUser: newUser.username,
+                registeredRole: newUser.role,
+                registeredEmail: newUser.email
+            },
+            ip: req.ip,
+            userAgent: req.get('user-agent')
+        });
 
         return res.status(201).json({
             success: true,
@@ -135,6 +154,18 @@ const authController = {
             role: user.role,
             lastLogin: user.lastLogin
         };
+
+        // Auditoría
+        await Audit.create({
+            user: user._id,
+            username: user.username,
+            userRole: user.role,
+            action: 'login',
+            module: 'auth',
+            details: { ip: req.ip },
+            ip: req.ip,
+            userAgent: req.get('user-agent')
+        });
 
         return res.status(200).json({
             success: true,
@@ -222,9 +253,22 @@ const authController = {
             const decoded = jwt.verify(refreshToken, config.jwt.refreshSecret);
 
             // Elimina el refresh token de la DB
-            await User.findByIdAndUpdate(decoded.id, {
+            const logoutUser = await User.findByIdAndUpdate(decoded.id, {
                 $unset: { refreshToken: 1 }
             });
+
+            // Auditoría
+            if (logoutUser) {
+                await Audit.create({
+                    user: decoded.id,
+                    username: logoutUser.username,
+                    userRole: logoutUser.role,
+                    action: 'logout',
+                    module: 'auth',
+                    ip: req.ip,
+                    userAgent: req.get('user-agent')
+                });
+            }
         } catch (error) {
             // Si el token es invalido, igual permite cerrar sesion
         }
@@ -310,6 +354,19 @@ const authController = {
 
         // Invalidar todos los tokens (seguridad)
         await user.invalidateTokens();
+
+        // Auditoría
+        await Audit.create({
+            user: req.user.id,
+            username: user.username,
+            userRole: user.role,
+            action: 'change_password',
+            module: 'auth',
+            resourceType: 'User',
+            resourceId: user._id,
+            ip: req.ip,
+            userAgent: req.get('user-agent')
+        });
 
         return res.status(200).json({
             success: true,

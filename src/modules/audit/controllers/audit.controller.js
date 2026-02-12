@@ -291,9 +291,10 @@ const auditController = {
      * Elimina logs mas antiguos de X dias (solo admin)
      */
     cleanupOldLogs: asyncHandler(async (req, res) => {
-        const { daysOld = 365 } = req.body; // Por defecto 1 año
+        // Soportar body y query params
+        const daysOld = req.body?.daysOld || req.query?.daysOld || 365;
 
-        if (daysOld < 90) {
+        if (parseInt(daysOld) < 90) {
             throw errors.badRequest('No se pueden eliminar logs menores a 90 días');
         }
 
@@ -326,9 +327,8 @@ const auditController = {
             throw errors.badRequest('startDate y endDate son requeridos');
         }
 
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
+        const start = new Date(startDate + 'T00:00:00.000Z');
+        const end = new Date(endDate + 'T23:59:59.999Z');
 
         // Formato de agrupación
         let dateFormat;
