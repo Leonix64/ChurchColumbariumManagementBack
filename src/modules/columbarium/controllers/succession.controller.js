@@ -59,23 +59,27 @@ const successionController = {
                 // Crear nuevo cliente
                 // Los beneficiarios del nuevo titular son los que quedan en la lista
                 const remainingBeneficiaries = customer.beneficiaries
-                    .filter(b => !b.isDeceased && b.order > nextBeneficiary.order)
+                    .filter(b => !b.isDeceased && b._id.toString() !== nextBeneficiary._id.toString())
+                    .sort((a, b) => a.order - b.order)
                     .map((b, index) => ({
                         ...b.toObject(),
+                        _id: undefined, // Generar nuevos IDs
                         order: index + 1 // Renumerar
                     }));
 
-                newOwner = await Customer.create([{
+                // Crear con validateBeforeSave: false porque puede no tener
+                // teléfono o suficientes beneficiarios (se actualizará después)
+                const newCustomerDoc = new Customer({
                     firstName,
                     lastName,
-                    phone: nextBeneficiary.phone || '',
-                    email: nextBeneficiary.email || '',
+                    phone: nextBeneficiary.phone || '0000000000',
+                    email: nextBeneficiary.email || undefined,
                     beneficiaries: remainingBeneficiaries.length >= 3
                         ? remainingBeneficiaries
-                        : [], // Si no quedan 3, dejar vacío (se debe actualizar manualmente)
+                        : [],
                     active: true
-                }], { session });
-                newOwner = newOwner[0];
+                });
+                newOwner = await newCustomerDoc.save({ session, validateBeforeSave: false });
             }
 
             // 5. Transferir titularidad del nicho
@@ -83,7 +87,8 @@ const successionController = {
                 newOwner._id,
                 'succession',
                 `Sucesión por fallecimiento de ${customer.firstName} ${customer.lastName}. ${notes || ''}`.trim(),
-                req.user?.id
+                req.user?.id,
+                { session }
             );
 
             // 6. Actualizar venta
@@ -241,7 +246,8 @@ const successionController = {
                 newOwnerId,
                 reason || 'transfer',
                 notes || 'Transferencia manual',
-                req.user?.id
+                req.user?.id,
+                { session }
             );
 
             // Actualizar venta si existe

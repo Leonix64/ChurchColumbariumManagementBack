@@ -187,4 +187,31 @@ NicheSchema.methods.release = async function () {
     return await this.save();
 };
 
+// Método para transferir titularidad (sucesión/transferencia)
+NicheSchema.methods.transferOwnership = async function (newOwnerId, reason, notes, registeredBy, options) {
+    // Cerrar el registro actual en el historial
+    if (this.currentOwner) {
+        const currentEntry = this.ownershipHistory.find(
+            h => h.owner.toString() === this.currentOwner.toString() && !h.endDate
+        );
+        if (currentEntry) {
+            currentEntry.endDate = new Date();
+        }
+    }
+
+    // Agregar nuevo registro al historial
+    this.ownershipHistory.push({
+        owner: newOwnerId,
+        startDate: new Date(),
+        reason: reason || 'transfer',
+        notes: notes || '',
+        registeredBy: registeredBy || undefined
+    });
+
+    // Actualizar propietario actual
+    this.currentOwner = newOwnerId;
+
+    return await this.save(options || {});
+};
+
 module.exports = mongoose.model('Niche', NicheSchema);

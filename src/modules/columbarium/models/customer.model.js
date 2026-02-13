@@ -1,56 +1,5 @@
 const mongoose = require('mongoose');
-
-const BeneficiarySchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: [true, 'El nombre del beneficiario es requerido'],
-        trim: true,
-        minlength: [3, 'El nombre debe tener al menos 3 caracteres'],
-        maxlength: [100, 'El nombre no puede tener más de 100 caracteres']
-    },
-    relationship: {
-        type: String,
-        required: [true, 'La relación es requerida'],
-        enum: [
-            'esposo', 'esposa', 'hijo', 'hija', 'padre', 'madre',
-            'hermano', 'hermana', 'abuelo', 'abuela', 'nieto', 'nieta',
-            'tio', 'tia', 'sobrino', 'sobrina', 'primo', 'prima',
-            'yerno', 'nuera', 'cuñado', 'cuñada', 'otro'
-        ],
-        trim: true
-    },
-    phone: {
-        type: String,
-        trim: true,
-        match: [/^[0-9]{10}$/, 'Teléfono inválido (10 dígitos)']
-    },
-    email: {
-        type: String,
-        lowercase: true,
-        trim: true,
-        match: [/^\S+@\S+\.\S+$/, 'Email inválido']
-    },
-    dateOfBirth: {
-        type: Date
-    },
-    isDeceased: {
-        type: Boolean,
-        default: false
-    },
-    deceasedDate: {
-        type: Date
-    },
-    order: {
-        type: Number,
-        required: [true, 'El orden es requerido'],
-        min: [1, 'El orden debe ser mayor a 0']
-    },
-    notes: {
-        type: String,
-        trim: true,
-        maxlength: [200, 'Las notas no pueden tener más de 200 caracteres']
-    }
-}, { _id: true, timestamps: false });
+const BeneficiarySchema = require('./beneficiary.schema');
 
 /**
  * Modelo de CLIENTE
@@ -148,6 +97,19 @@ CustomerSchema.index({
 CustomerSchema.index({ firstName: 1, lastName: 1 });
 CustomerSchema.index({ active: 1, createdAt: -1 });
 
+
+// Método para obtener el próximo beneficiario vivo (ordenado por prioridad)
+CustomerSchema.methods.getNextBeneficiary = function () {
+    if (!this.beneficiaries || this.beneficiaries.length === 0) {
+        return null;
+    }
+
+    const livingBeneficiaries = this.beneficiaries
+        .filter(b => !b.isDeceased)
+        .sort((a, b) => a.order - b.order);
+
+    return livingBeneficiaries.length > 0 ? livingBeneficiaries[0] : null;
+};
 
 // Método para obtener nombre completo
 CustomerSchema.virtual('fullName').get(function () {

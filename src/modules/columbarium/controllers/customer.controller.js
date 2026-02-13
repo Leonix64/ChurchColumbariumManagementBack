@@ -270,14 +270,16 @@ const customerController = {
             .populate('niche', 'code displayNumber module section type price')
             .sort({ createdAt: -1 });
 
-        // Calcular estadísticas
+        // Calcular estadísticas (excluyendo ventas canceladas)
+        const validSales = sales.filter(s => s.status !== 'cancelled');
         const stats = {
             totalSales: sales.length,
             activeSales: sales.filter(s => s.status === 'active').length,
             paidSales: sales.filter(s => s.status === 'paid').length,
-            totalInvested: sales.reduce((sum, s) => sum + s.totalAmount, 0),
-            totalPaid: sales.reduce((sum, s) => sum + s.totalPaid, 0),
-            totalPending: sales.reduce((sum, s) => sum + s.balance, 0)
+            cancelledSales: sales.filter(s => s.status === 'cancelled').length,
+            totalInvested: validSales.reduce((sum, s) => sum + s.totalAmount, 0),
+            totalPaid: validSales.reduce((sum, s) => sum + (s.totalPaid || 0), 0),
+            totalPending: validSales.reduce((sum, s) => sum + (s.balance || 0), 0)
         };
 
         res.status(200).json({
@@ -342,7 +344,7 @@ const customerController = {
      */
     markBeneficiaryDeceased: asyncHandler(async (req, res) => {
         const { id, beneficiaryId } = req.params;
-        const { deceasedDate } = req.body;
+        const { deceasedDate, notes } = req.body;
 
         const customer = await Customer.findById(id);
         if (!customer) {
@@ -360,6 +362,9 @@ const customerController = {
 
         beneficiary.isDeceased = true;
         beneficiary.deceasedDate = deceasedDate || new Date();
+        if (notes) {
+            beneficiary.notes = notes;
+        }
         await customer.save();
 
         // Auditoría
@@ -374,7 +379,8 @@ const customerController = {
             details: {
                 customerId: customer._id,
                 beneficiaryName: beneficiary.name,
-                deceasedDate: beneficiary.deceasedDate
+                deceasedDate: beneficiary.deceasedDate,
+                notes: beneficiary.notes || undefined
             },
             status: 'success',
             ip: req.ip,
