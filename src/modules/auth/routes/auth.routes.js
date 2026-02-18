@@ -20,23 +20,7 @@ router.post('/invalidate-all', authMiddleware.verifyToken, authController.invali
 router.get('/admin/users',
     authMiddleware.verifyToken,
     authMiddleware.checkRole('admin'),
-    async (req, res) => {
-        try {
-            const User = require('../models/user.model');
-            const users = await User.find({}).select('-password -refreshToken');
-
-            res.json({
-                success: true,
-                count: users.length,
-                data: users
-            });
-        } catch (error) {
-            res.status(500).json({
-                success: false,
-                message: 'Error al obtener usuarios'
-            });
-        }
-    }
+    authController.getAllUsers
 );
 
 module.exports = router;

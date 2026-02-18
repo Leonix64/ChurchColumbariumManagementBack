@@ -17,18 +17,15 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser()); // Para manejar cookies
 
-setImmediate(() => {
-    require('./modules/columbarium/models/index.model');
-});
-
 // Rutas
 app.use('/api/auth', require('./modules/auth/routes/auth.routes'));
 app.use('/api/audit', require('./modules/audit/routes/audit.routes'));
-app.use('/api/niches', require('./modules/columbarium/routes/niche.routes'));
-app.use('/api/customers', require('./modules/columbarium/routes/customer.routes'));
-app.use('/api/maintenance', require('./modules/columbarium/routes/maintenance.routes'));
-app.use('/api/sales', require('./modules/columbarium/routes/sale.routes'));
-app.use('/api/succession', require('./modules/columbarium/routes/succession.routes'));
+app.use('/api/customers', require('./modules/customer/routes/customer.routes'));
+app.use('/api/beneficiaries', require('./modules/beneficiary/routes/beneficiary.routes'));
+app.use('/api/niches', require('./modules/niche/routes/niche.routes'));
+app.use('/api/sales', require('./modules/sale/routes/sale.routes'));
+app.use('/api/succession', require('./modules/succession/routes/succession.routes'));
+app.use('/api/maintenance', require('./modules/maintenance/routes/maintenance.routes'));
 
 // Ruta de prueba
 app.get('/', (req, res) => {

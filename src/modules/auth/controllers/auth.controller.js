@@ -379,6 +379,20 @@ const authController = {
      * POST /api/auth/invalidate-all
      * Aumenta tokenVersion, invalidando todos los tokens existentes
      */
+    /**
+     * OBTENER TODOS LOS USUARIOS (Admin)
+     * GET /api/auth/admin/users
+     */
+    getAllUsers: asyncHandler(async (req, res) => {
+        const users = await User.find({}).select('-password -refreshToken');
+
+        return res.status(200).json({
+            success: true,
+            count: users.length,
+            data: users
+        });
+    }),
+
     invalidateAllTokens: asyncHandler(async (req, res) => {
         const { userId } = req.body;
         const requestingUser = req.user; // Del middleware de auth
