@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const rateLimit = require('express-rate-limit');
 
 const config = require('./config/env');
 const connectDB = require('./config/db');
@@ -17,9 +18,33 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser()); // Para manejar cookies
 
-setImmediate(() => {
-    require('./modules/columbarium/models/index.model');
+require('./modules/columbarium/models/index.model');
+
+// Rate limiters
+const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 100,
+    message: {
+        success: false,
+        message: 'Demasiadas solicitudes, intenta más tarde'
+    },
+    standardHeaders: true,
+    legacyHeaders: false
 });
+
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10, // solo 10 intentos de login cada 15min
+    message: {
+        success: false,
+        message: 'Demasiados intentos, intenta más tarde'
+    },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+// Aplicar rate limit general a todas las rutas /api
+app.use('/api', generalLimiter);
 
 // Rutas
 app.use('/api/auth', require('./modules/auth/routes/auth.routes'));

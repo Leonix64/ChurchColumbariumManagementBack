@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Niche = require('../models/niche.model');
 const Customer = require('../models/customer.model');
 const Sale = require('../models/sale.model');
+const Succession = require('../models/succession.model');
 const Audit = require('../../audit/models/audit.model');
 const { asyncHandler, errors } = require('../../../middlewares/errorHandler');
 
@@ -11,7 +12,7 @@ const successionController = {
      * POST /api/succession/register
      */
     registerSuccession: asyncHandler(async (req, res) => {
-        const { customerId, nicheId, deceasedDate, notes } = req.body;
+        const { customerId, nicheId, deceasedDate, notes, deceasedId, reason } = req.body;
 
         if (!customerId || !nicheId) {
             throw errors.badRequest('Customer ID y Niche ID son requeridos');
@@ -97,6 +98,20 @@ const successionController = {
                 sale.customer = newOwner._id;
                 sale.notes = (sale.notes || '') + `\nSucesión: ${new Date().toLocaleDateString()}`;
                 await sale.save({ session });
+
+                // Registrar sucesión
+                await Succession.create([{
+                    niche: nicheId,
+                    sale: sale._id,
+                    previousOwner: customerId,
+                    newOwner: newOwner._id,
+                    deceased: deceasedId || undefined,
+                    registeredBy: req.user?.id,
+                    type: 'death',
+                    reason: reason || 'Fallecimiento del titular',
+                    transferDate: new Date(),
+                    notes: notes || undefined
+                }], { session });
             }
 
             // 7. Marcar al cliente anterior como inactivo (opcional)
@@ -173,42 +188,51 @@ const successionController = {
     }),
 
     /**
-     * OBTENER HISTORIAL DE TITULARIDAD DE UN NICHO
-     * GET /api/succession/niche/:id/history
+     * OBTENER HISTORIAL DE SUCESIONES DE UN NICHO
+     * GET /api/succession/niche/:nicheId/history
      */
-    getOwnershipHistory: asyncHandler(async (req, res) => {
-        const { id } = req.params;
+    getNicheSuccessionHistory: asyncHandler(async (req, res) => {
+        const { nicheId } = req.params;
 
-        const niche = await Niche.findById(id)
-            .populate({
-                path: 'ownershipHistory.owner',
-                select: 'firstName lastName phone email'
-            })
-            .populate({
-                path: 'ownershipHistory.registeredBy',
-                select: 'username fullName'
-            })
-            .populate('currentOwner', 'firstName lastName phone email');
-
-        if (!niche) {
-            throw errors.notFound('Nicho');
-        }
+        const history = await Succession
+            .find({ niche: nicheId })
+            .populate('previousOwner', 'firstName lastName')
+            .populate('newOwner', 'firstName lastName')
+            .populate('deceased', 'fullName dateOfDeath')
+            .populate('registeredBy', 'fullName username')
+            .sort({ transferDate: -1 });
 
         res.status(200).json({
-            success: true,
-            data: {
-                niche: {
-                    id: niche._id,
-                    code: niche.code,
-                    displayNumber: niche.displayNumber,
-                    module: niche.module,
-                    section: niche.section
-                },
-                currentOwner: niche.currentOwner,
-                history: niche.ownershipHistory.sort((a, b) =>
-                    new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
-                )
-            }
+            nicheId,
+            total: history.length,
+            history
+        });
+    }),
+
+    /**
+     * OBTENER HISTORIAL DE SUCESIONES DE UN CLIENTE
+     * GET /api/succession/customer/:customerId/history
+     */
+    getCustomerSuccessionHistory: asyncHandler(async (req, res) => {
+        const { customerId } = req.params;
+
+        const history = await Succession
+            .find({
+                $or: [
+                    { previousOwner: customerId },
+                    { newOwner: customerId }
+                ]
+            })
+            .populate('niche', 'code section module')
+            .populate('previousOwner', 'firstName lastName')
+            .populate('newOwner', 'firstName lastName')
+            .populate('registeredBy', 'fullName username')
+            .sort({ transferDate: -1 });
+
+        res.status(200).json({
+            customerId,
+            total: history.length,
+            history
         });
     }),
 
@@ -256,6 +280,19 @@ const successionController = {
                 sale.customer = newOwnerId;
                 sale.notes = (sale.notes || '') + `\nTransferencia: ${new Date().toLocaleDateString()}`;
                 await sale.save({ session });
+
+                // Registrar sucesión
+                await Succession.create([{
+                    niche: nicheId,
+                    sale: sale._id,
+                    previousOwner: previousOwner._id,
+                    newOwner: newOwnerId,
+                    registeredBy: req.user?.id,
+                    type: 'manual',
+                    reason: reason || 'Transferencia manual',
+                    transferDate: new Date(),
+                    notes: notes || undefined
+                }], { session });
             }
 
             // Auditoría

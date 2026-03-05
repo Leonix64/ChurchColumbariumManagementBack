@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { toNumber } = require('../../../utils/decimal');
 
 /**
  * Modelo de REEMBOLSO
@@ -34,9 +35,12 @@ const RefundSchema = new mongoose.Schema({
 
     // Monto del reembolso
     amount: {
-        type: Number,
+        type: mongoose.Schema.Types.Decimal128,
         required: true,
-        min: [0, 'El monto del reembolso no puede ser negativo']
+        validate: {
+            validator: function (v) { return toNumber(v) >= 0; },
+            message: 'El monto no puede ser negativo'
+        }
     },
 
     // Metodo de devolucion
@@ -86,5 +90,13 @@ RefundSchema.index({ sale: 1, refundDate: -1 });
 RefundSchema.index({ customer: 1, refundDate: -1 });
 RefundSchema.index({ receiptNumber: 1 });
 RefundSchema.index({ status: 1, createdAt: -1 });
+
+// Convertir Decimal128 → Number en JSON
+RefundSchema.set('toJSON', {
+    transform: function (doc, ret) {
+        if (ret.amount != null) ret.amount = toNumber(ret.amount);
+        return ret;
+    }
+});
 
 module.exports = mongoose.model('Refund', RefundSchema);

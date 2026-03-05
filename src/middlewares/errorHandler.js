@@ -118,7 +118,7 @@ const notFoundHandler = (req, res) => {
     res.status(404).json({
         success: false,
         message: 'Endpoint no encontrado',
-        path: req.originalPath,
+        path: req.originalUrl,
         method: req.method
     });
 };

@@ -7,7 +7,11 @@ const mongoose = require('mongoose');
 
 const DeceasedSchema = new mongoose.Schema({
     // Nicho donde esta depositado
-    niche: { type: mongoose.Schema.Types.ObjectId, ref: 'Niche' },
+    niche: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Niche',
+        required: [true, 'El nicho es requerido']
+    },
 
     // Datos personales
     fullName: { type: String, required: true },
@@ -26,5 +30,8 @@ const DeceasedSchema = new mongoose.Schema({
         default: 'otro'
     }
 }, { timestamps: true });
+
+DeceasedSchema.index({ niche: 1 });
+DeceasedSchema.index({ fullName: 'text' });
 
 module.exports = mongoose.model('Deceased', DeceasedSchema);

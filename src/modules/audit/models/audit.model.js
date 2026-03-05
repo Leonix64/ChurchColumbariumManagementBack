@@ -38,7 +38,7 @@ const AuditSchema = new mongoose.Schema({
     // EN QUE módulo?
     module: {
         type: String,
-        enum: ['auth', 'customer', 'niche', 'sale', 'payment'],
+        enum: ['auth', 'customer', 'niche', 'sale', 'payment', 'succession', 'maintenance'],
         required: true
     },
 

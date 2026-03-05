@@ -11,6 +11,8 @@
     "seed:modules": "node src/scripts/seed-all-modules.js",
     "seed:customers": "node src/scripts/seed-customers.js",
     "seed:admin": "node src/scripts/seed-admin.js",
+    "seed:sales": "node src/scripts/seed-sales.js",
+    "seed:all": "npm run seed:admin && npm run seed:niches && npm run seed:customers && npm run seed:sales",
     "test:sale": "node src/scripts/test-sale-flow.js",
     "test:aws": "node src/scripts/test-aws-connection.js",
     "check:data": "node src/scripts/check-data.js",

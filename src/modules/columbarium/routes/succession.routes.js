@@ -18,13 +18,23 @@ router.post('/register',
 );
 
 /**
- * GET /api/succession/niche/:id/history
- * Obtener historial de titularidad de un nicho
- * Roles: admin, seller, viewer
+ * GET /api/succession/niche/:nicheId/history
+ * Obtener historial de sucesiones de un nicho
+ * Roles: admin, seller
  */
-router.get('/niche/:id/history',
-    columbariumValidator.validateMongoId('id'),
-    successionController.getOwnershipHistory
+router.get('/niche/:nicheId/history',
+    authMiddleware.checkRole('admin', 'seller'),
+    successionController.getNicheSuccessionHistory
+);
+
+/**
+ * GET /api/succession/customer/:customerId/history
+ * Obtener historial de sucesiones de un cliente
+ * Roles: admin, seller
+ */
+router.get('/customer/:customerId/history',
+    authMiddleware.checkRole('admin', 'seller'),
+    successionController.getCustomerSuccessionHistory
 );
 
 /**

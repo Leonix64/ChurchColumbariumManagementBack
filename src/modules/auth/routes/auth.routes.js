@@ -1,13 +1,32 @@
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 const authController = require('../controllers/auth.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const authValidator = require('../validators/auth.validator');
 
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: {
+        success: false,
+        message: 'Demasiados intentos, intenta más tarde'
+    },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
 // Rutas públicas
-router.post('/register', authValidator.validateRegister, authController.register);
-router.post('/login', authValidator.validateLogin, authController.login);
-router.post('/refresh-token', authValidator.validateRefreshToken, authController.refreshToken);
+router.post('/login', authLimiter, authValidator.validateLogin, authController.login);
+router.post('/refresh-token', authLimiter, authValidator.validateRefreshToken, authController.refreshToken);
+
+// Registro de usuarios — solo admin puede crear cuentas
+router.post('/register',
+    authMiddleware.verifyToken,
+    authMiddleware.checkRole('admin'),
+    authValidator.validateRegister,
+    authController.register
+);
 
 // Rutas protegidas (requieren autenticación)
 router.post('/logout', authMiddleware.verifyToken, authController.logout);

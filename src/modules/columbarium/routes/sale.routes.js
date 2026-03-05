@@ -41,16 +41,6 @@ router.post('/',
 );
 
 /**
- * POST /api/sales/bulk
- * Crear venta multiple
- * Roles: admin, seller
- */
-router.post('/bulk',
-    authMiddleware.checkRole('admin', 'seller'),
-    saleController.createBulkSale
-);
-
-/**
  * GET /api/sales
  * Listar todas las ventas
  * Query params: status, customerId

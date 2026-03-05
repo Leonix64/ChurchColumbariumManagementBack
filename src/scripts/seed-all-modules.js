@@ -21,7 +21,7 @@ const MODULES_CONFIG = {
                 rows: 7,
                 nichesPerRow: 51,
                 marbleFrom: 44, // Columnas 44-51 son mármol
-                prices: { wood: 30000, marble: 35000 }
+                prices: { wood: '30000', marble: '35000' }
             }
         }
     },
@@ -33,7 +33,7 @@ const MODULES_CONFIG = {
                 rows: 7,
                 nichesPerRow: 9,
                 marbleFrom: 1, // TODO ES MÁRMOL
-                prices: { marble: 35000 }
+                prices: { marble: '35000' }
             }
         }
     },
@@ -46,14 +46,14 @@ const MODULES_CONFIG = {
                 nichesPerRow: 9,
                 startNumber: 1,
                 marbleFrom: 999, // Ninguno es mármol
-                prices: { wood: 30000 }
+                prices: { wood: '30000' }
             },
             B: {
                 rows: 7,
                 nichesPerRow: 9,
                 startNumber: 10,
                 marbleFrom: 999,
-                prices: { wood: 30000 }
+                prices: { wood: '30000' }
             }
         }
     },
@@ -66,14 +66,14 @@ const MODULES_CONFIG = {
                 nichesPerRow: 14,
                 startNumber: 1,
                 marbleFrom: 999,
-                prices: { wood: 30000 }
+                prices: { wood: '30000' }
             },
             B: {
                 rows: 7,
                 nichesPerRow: 14,
                 startNumber: 15,
                 marbleFrom: 999,
-                prices: { wood: 30000 }
+                prices: { wood: '30000' }
             }
         }
     },
@@ -86,14 +86,14 @@ const MODULES_CONFIG = {
                 nichesPerRow: 20,
                 startNumber: 1,
                 marbleFrom: 999,
-                prices: { wood: 30000 }
+                prices: { wood: '30000' }
             },
             B: {
                 rows: 7,
                 nichesPerRow: 20,
                 startNumber: 21,
                 marbleFrom: 999,
-                prices: { wood: 30000 }
+                prices: { wood: '30000' }
             }
         }
     },
@@ -106,14 +106,14 @@ const MODULES_CONFIG = {
                 nichesPerRow: 26,
                 startNumber: 1,
                 marbleFrom: 999,
-                prices: { wood: 30000 }
+                prices: { wood: '30000' }
             },
             B: {
                 rows: 7,
                 nichesPerRow: 26,
                 startNumber: 27,
                 marbleFrom: 999,
-                prices: { wood: 30000 }
+                prices: { wood: '30000' }
             }
         }
     },
@@ -125,7 +125,7 @@ const MODULES_CONFIG = {
                 rows: 7,
                 nichesPerRow: 9,
                 marbleFrom: 999,
-                prices: { wood: 30000 }
+                prices: { wood: '30000' }
             }
         }
     },
@@ -137,7 +137,7 @@ const MODULES_CONFIG = {
                 rows: 7,
                 nichesPerRow: 7,
                 marbleFrom: 999,
-                prices: { wood: 30000 }
+                prices: { wood: '30000' }
             }
         }
     }

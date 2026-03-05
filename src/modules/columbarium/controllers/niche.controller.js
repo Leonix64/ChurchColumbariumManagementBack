@@ -256,62 +256,6 @@ const nicheController = {
     }),
 
     /**
-     * CAMBIAR MATERIAL MASIVO
-     * POST /api/niches/bulk-material
-     * Body: { niches: [id1, id2, ...], type: 'wood' | 'marble, price: 35000 }
-     */
-    bulkChangeMaterial: asyncHandler(async (req, res) => {
-        const { nicheIds, type, price } = req.body;
-
-        if (!nicheIds || !Array.isArray(nicheIds) || nicheIds.length === 0) {
-            throw errors.badRequest('Proporciona al menos un ID de nicho');
-        }
-
-        if (!type || !['wood', 'marble', 'special'].includes(type)) {
-            throw errors.badRequest('Tipo debe ser: wood, marble o special');
-        }
-
-        if (!price || price <= 0) {
-            throw errors.badRequest('Precio debe ser mayor a 0');
-        }
-
-        const soldNiches = await Niche.find({
-            _id: { $in: nicheIds },
-            status: 'sold'
-        });
-
-        if (soldNiches.length > 0) {
-            throw errors.badRequest(`No se pueden modificar nichos vendidos: ${soldNiches.map(n => n.code).join(', ')}`);
-        }
-
-        const result = await Niche.updateMany(
-            { _id: { $in: nicheIds }, status: { $ne: 'sold' } },
-            { $set: { type: type, price: price } }
-        );
-
-        const updated = await Niche.find({ _id: { $in: nicheIds } })
-            .select('code displayNumber type price');
-
-        // Auditoría
-        await Audit.create({
-            user: req.user.id,
-            username: req.user.username,
-            userRole: req.user.role,
-            action: 'bulk_change_material',
-            module: 'niche',
-            details: { count: result.modifiedCount, type, price, codes: updated.map(n => n.code) },
-            ip: req.ip,
-            userAgent: req.get('user-agent')
-        });
-
-        res.json({
-            success: true,
-            message: `${result.modifiedCount} nicho(s) actualizados a ${type}`,
-            data: updated
-        });
-    }),
-
-    /**
      * CAMBIAR PRECIO
      * PATCH /api/niches/:id/price
      * Body: { price: 32000 }
@@ -363,46 +307,33 @@ const nicheController = {
     }),
 
     /**
-     * DESHABILITAR NICHOS
-     * POST /api/niches/disable
-     * Body: { nicheIds: [id1, id2, ...], reason: 'Motivo }
+     * DESHABILITAR NICHO
+     * POST /api/niches/:id/disable
+     * Body: { reason: 'Motivo' }
      */
     disableNiches: asyncHandler(async (req, res) => {
-        const { nicheIds, reason } = req.body;
-
-        if (!nicheIds || !Array.isArray(nicheIds) || nicheIds.length === 0) {
-            throw errors.badRequest('Proporciona al menos un ID de nicho');
-        }
+        const { id } = req.params;
+        const { reason } = req.body;
 
         if (!reason || reason.trim().length === 0) {
             throw errors.badRequest('Proporciona una razón para deshabilitar');
         }
 
-        const niches = await Niche.find({ _id: { $in: nicheIds } });
+        const niche = await Niche.findById(id);
 
-        if (niches.length !== nicheIds.length) {
-            throw errors.notFound('Algunos nichos no existen');
+        if (!niche) {
+            throw errors.notFound('Nicho');
         }
 
-        const soldNiches = niches.filter(n => n.status === 'sold');
-        if (soldNiches.length > 0) {
-            throw errors.badRequest(`No se pueden deshabilitar nichos vendidos: ${soldNiches.map(n => n.code).join(', ')}`);
+        if (niche.status === 'sold') {
+            throw errors.badRequest(`No se puede deshabilitar un nicho vendido: ${niche.code}`);
         }
 
-        const result = await Niche.updateMany(
-            { _id: { $in: nicheIds } },
-            {
-                $set: {
-                    status: 'disabled',
-                    disabledReason: reason.trim(),
-                    disabledAt: new Date(),
-                    disabledBy: req.user.id
-                }
-            }
-        );
-
-        const updated = await Niche.find({ _id: { $in: nicheIds } })
-            .select('code displayNumber module section status');
+        niche.status = 'disabled';
+        niche.disabledReason = reason.trim();
+        niche.disabledAt = new Date();
+        niche.disabledBy = req.user.id;
+        await niche.save();
 
         // Auditoría
         await Audit.create({
@@ -411,15 +342,17 @@ const nicheController = {
             userRole: req.user.role,
             action: 'disable_niche',
             module: 'niche',
-            details: { count: result.modifiedCount, reason: reason.trim(), codes: updated.map(n => n.code) },
+            resourceType: 'Niche',
+            resourceId: niche._id,
+            details: { code: niche.code, reason: reason.trim() },
             ip: req.ip,
             userAgent: req.get('user-agent')
         });
 
         res.json({
             success: true,
-            message: `${result.modifiedCount} nicho(s) deshabilitado(s)`,
-            data: updated
+            message: `Nicho ${niche.code} deshabilitado`,
+            data: niche
         });
     }),
 

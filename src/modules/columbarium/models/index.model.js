@@ -6,6 +6,9 @@ require('./niche.model');
 require('./sale.model');
 require('./payment.model');
 require('./refund.model');
+require('./amortSchedule.model');
+require('./paymentScheduleLink.model');
+require('./succession.model');
 
 console.log('[INFO] Modelos registrados correctamente');
 

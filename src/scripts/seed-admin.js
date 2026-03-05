@@ -9,7 +9,7 @@ const createInitialUsers = async () => {
     try {
         console.log('[INFO] Conectando a MongoDB Atlas...\n');
 
-        await mongoose.connect(config.db.uri, {
+        await mongoose.connect(process.env.MONGO_URI, {
             serverSelectionTimeoutMS: 5000,
             socketTimeoutMS: 45000,
         });

@@ -23,7 +23,7 @@ const seedNiches = async () => {
                 // Columns 44-51 are marble (last 8 of each row)
                 const isMarble = col >= 44;
                 const type = isMarble ? 'marble' : 'wood';
-                const price = isMarble ? 35000 : 30000;
+                const price = isMarble ? '35000' : '30000';
 
                 niches.push({
                     code: `A-A-${row}-${globalCounter}`,

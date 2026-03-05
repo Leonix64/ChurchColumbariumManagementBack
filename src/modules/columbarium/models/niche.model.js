@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { toNumber } = require('../../../utils/decimal');
 
 const OwnershipHistorySchema = new mongoose.Schema({
     owner: {
@@ -98,9 +99,12 @@ const NicheSchema = new mongoose.Schema({
 
     // Precio en pesos
     price: {
-        type: Number,
+        type: mongoose.Schema.Types.Decimal128,
         required: [true, 'El precio es requerido'],
-        min: [0, 'El precio no puede ser negativo']
+        validate: {
+            validator: function (v) { return toNumber(v) >= 0; },
+            message: 'El precio no puede ser negativo'
+        }
     },
 
     // Estado actual
@@ -145,7 +149,7 @@ const NicheSchema = new mongoose.Schema({
         trim: true,
         maxlength: [500, 'El motivo no puede tener más de 500 caracteres']
     },
-    disableAt: {
+    disabledAt: {
         type: Date,
     },
     disabledBy: {
@@ -213,5 +217,14 @@ NicheSchema.methods.transferOwnership = async function (newOwnerId, reason, note
 
     return await this.save(options || {});
 };
+
+// Convertir Decimal128 → Number en JSON e incluir virtuals
+NicheSchema.set('toJSON', {
+    virtuals: true,
+    transform: function (doc, ret) {
+        if (ret.price != null) ret.price = toNumber(ret.price);
+        return ret;
+    }
+});
 
 module.exports = mongoose.model('Niche', NicheSchema);

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { toNumber } = require('../../../utils/decimal');
 
 /**
  * Modelo de PAGO
@@ -36,24 +37,23 @@ const PaymentSchema = new mongoose.Schema({
 
     // Monto total del pago (puede cubrir multiples cuotas)
     amount: {
-        type: Number,
+        type: mongoose.Schema.Types.Decimal128,
         required: true,
-        min: [1, 'El monto debe ser mayor a 0'],
         validate: {
             validator: function (v) {
-                return v > 0;
+                return toNumber(v) > 0;
             },
-            message: props => `${props.value} no es un monto válido`
+            message: 'El monto debe ser mayor a 0'
         }
     },
 
     // Balance de la venta antes y despues del pago (solo para pagos de venta)
     balanceBefore: {
-        type: Number,
+        type: mongoose.Schema.Types.Decimal128,
         required: false
     },
     balanceAfter: {
-        type: Number,
+        type: mongoose.Schema.Types.Decimal128,
         required: false
     },
 
@@ -113,13 +113,7 @@ const PaymentSchema = new mongoose.Schema({
 PaymentSchema.index({ sale: 1, paymentDate: -1 });
 PaymentSchema.index({ customer: 1, paymentDate: -1 });
 PaymentSchema.index({ niche: 1, concept: 1, maintenanceYear: 1 }); // Para buscar mantenimientos
-PaymentSchema.index({ receiptNumber: 1 });
 PaymentSchema.index({ status: 1, createdAt: -1 });
-
-// Virtual: Numero de cuotas cubiertas
-PaymentSchema.virtual('paymentsCovered').get(function () {
-    return this.appliedTo ? this.appliedTo.length : 0;
-});
 
 // Metodo: Cancelar pago
 PaymentSchema.methods.cancelPayment = function (userId, reason) {
@@ -159,8 +153,16 @@ PaymentSchema.pre('validate', function () {
     }
 });
 
-// Asegurar que virtuals se incluyan en JSON
-PaymentSchema.set('toJSON', { virtuals: true });
+// Asegurar que virtuals se incluyan en JSON y convertir Decimal128 → Number
+PaymentSchema.set('toJSON', {
+    virtuals: true,
+    transform: function (doc, ret) {
+        if (ret.amount != null)        ret.amount        = toNumber(ret.amount);
+        if (ret.balanceBefore != null) ret.balanceBefore = toNumber(ret.balanceBefore);
+        if (ret.balanceAfter != null)  ret.balanceAfter  = toNumber(ret.balanceAfter);
+        return ret;
+    }
+});
 PaymentSchema.set('toObject', { virtuals: true });
 
 module.exports = mongoose.model('Payment', PaymentSchema);

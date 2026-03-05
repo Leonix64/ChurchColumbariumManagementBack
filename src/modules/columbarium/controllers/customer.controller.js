@@ -1,6 +1,5 @@
 const Customer = require('../models/customer.model');
 const Sale = require('../models/sale.model');
-const Payment = require('../models/payment.model');
 const Audit = require('../../audit/models/audit.model');
 const { asyncHandler, errors } = require('../../../middlewares/errorHandler');
 
@@ -83,13 +82,9 @@ const customerController = {
         const { search, active } = req.query;
         let query = {};
 
-        // Filtro por busqueda de texto
+        // Filtro por busqueda de texto (usa text index sobre firstName, lastName, rfc)
         if (search) {
-            query.$or = [
-                { firstName: { $regex: search, $options: 'i' } },
-                { lastName: { $regex: search, $options: 'i' } },
-                { rfc: { $regex: search, $options: 'i' } }
-            ];
+            query.$text = { $search: search };
         }
 
         // Filtro por estado activo/inactivo
@@ -98,7 +93,8 @@ const customerController = {
         }
 
         const customers = await Customer.find(query)
-            .sort({ createdAt: -1 });
+            .select(search ? { score: { $meta: 'textScore' } } : {})
+            .sort(search ? { score: { $meta: 'textScore' } } : { createdAt: -1 });
 
         res.status(200).json({
             success: true,

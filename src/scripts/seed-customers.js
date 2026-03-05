@@ -10,8 +10,9 @@ const seedCustomers = async () => {
     try {
         console.log('[INFO] Creando clientes de prueba con beneficiarios completos...\n');
 
-        // Limpiar clientes existentes (opcional)
-        // await Customer.deleteMany({});
+        // Limpiar clientes existentes
+        await Customer.deleteMany({});
+        console.log('[INFO] Clientes eliminados\n');
 
         const customers = [
             {

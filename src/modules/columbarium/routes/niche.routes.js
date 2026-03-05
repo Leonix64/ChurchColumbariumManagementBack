@@ -88,12 +88,6 @@ router.patch('/:id/material',
     nicheController.changeMaterial
 );
 
-// Cambiar material (masivo)
-router.post('/bulk-material',
-    authMiddleware.checkRole('admin'),
-    nicheController.bulkChangeMaterial
-);
-
 // Cambiar precio (individual)
 router.patch('/:id/price',
     authMiddleware.checkRole('admin'),
@@ -101,9 +95,10 @@ router.patch('/:id/price',
     nicheController.changePrice
 );
 
-// Deshabilitar nichos
+// Deshabilitar nicho
 router.post('/:id/disable',
     authMiddleware.checkRole('admin'),
+    columbariumValidator.validateMongoId('id'),
     nicheController.disableNiches
 );
 
