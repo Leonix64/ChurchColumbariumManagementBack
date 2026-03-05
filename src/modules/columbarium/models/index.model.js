@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+require('./beneficiary.model');
 require('./customer.model');
 require('./deceased.model');
 require('./niche.model');

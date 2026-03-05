@@ -3,12 +3,12 @@ const mongoose = require('mongoose');
 const Customer = require('../modules/columbarium/models/customer.model');
 
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('[INFO] Conectado para crear clientes con beneficiarios...'))
+    .then(() => console.log('[INFO] Conectado para crear clientes...'))
     .catch(err => console.error('[ERROR]', err));
 
 const seedCustomers = async () => {
     try {
-        console.log('[INFO] Creando clientes de prueba con beneficiarios completos...\n');
+        console.log('[INFO] Creando clientes de prueba...\n');
 
         // Limpiar clientes existentes
         await Customer.deleteMany({});
@@ -27,38 +27,6 @@ const seedCustomers = async () => {
                     phone: '4499876543',
                     relationship: 'Esposa'
                 },
-                beneficiaries: [
-                    {
-                        name: 'Ana Martínez Rodríguez',
-                        relationship: 'esposa',
-                        phone: '4499876543',
-                        email: 'ana.martinez@email.com',
-                        dateOfBirth: new Date('1987-08-20'),
-                        isDeceased: false,
-                        order: 1,
-                        notes: 'Beneficiaria principal - Esposa'
-                    },
-                    {
-                        name: 'Luis Martínez Rodríguez',
-                        relationship: 'hijo',
-                        phone: '4497778888',
-                        email: 'luis.martinez@email.com',
-                        dateOfBirth: new Date('2010-05-15'),
-                        isDeceased: false,
-                        order: 2,
-                        notes: 'Segundo beneficiario - Hijo mayor'
-                    },
-                    {
-                        name: 'Carmen Martínez Rodríguez',
-                        relationship: 'hija',
-                        phone: '4496665555',
-                        email: 'carmen.martinez@email.com',
-                        dateOfBirth: new Date('2015-11-30'),
-                        isDeceased: false,
-                        order: 3,
-                        notes: 'Tercer beneficiario - Hija menor'
-                    }
-                ],
                 active: true
             },
             {
@@ -73,38 +41,6 @@ const seedCustomers = async () => {
                     phone: '4498765432',
                     relationship: 'Hermano'
                 },
-                beneficiaries: [
-                    {
-                        name: 'Carlos Gómez Pérez',
-                        relationship: 'hermano',
-                        phone: '4498765432',
-                        email: 'carlos.gomez@email.com',
-                        dateOfBirth: new Date('1975-03-12'),
-                        isDeceased: false,
-                        order: 1,
-                        notes: 'Beneficiario principal - Hermano mayor'
-                    },
-                    {
-                        name: 'Sofía Gómez Ramírez',
-                        relationship: 'sobrina',
-                        phone: '4495554444',
-                        email: 'sofia.gomez@email.com',
-                        dateOfBirth: new Date('1998-07-08'),
-                        isDeceased: false,
-                        order: 2,
-                        notes: 'Segundo beneficiario - Sobrina'
-                    },
-                    {
-                        name: 'María Hernández López',
-                        relationship: 'madre',
-                        phone: '4493332222',
-                        email: 'maria.hernandez@email.com',
-                        dateOfBirth: new Date('1950-12-25'),
-                        isDeceased: false,
-                        order: 3,
-                        notes: 'Tercer beneficiario - Madre'
-                    }
-                ],
                 active: true
             },
             {
@@ -119,38 +55,6 @@ const seedCustomers = async () => {
                     phone: '4497776666',
                     relationship: 'Madre'
                 },
-                beneficiaries: [
-                    {
-                        name: 'Gabriela Torres Díaz',
-                        relationship: 'esposa',
-                        phone: '4491112233',
-                        email: 'gabriela.torres@email.com',
-                        dateOfBirth: new Date('1994-02-14'),
-                        isDeceased: false,
-                        order: 1,
-                        notes: 'Beneficiaria principal - Esposa'
-                    },
-                    {
-                        name: 'María López Torres',
-                        relationship: 'madre',
-                        phone: '4497776666',
-                        email: 'maria.lopez@email.com',
-                        dateOfBirth: new Date('1965-09-10'),
-                        isDeceased: false,
-                        order: 2,
-                        notes: 'Segundo beneficiario - Madre'
-                    },
-                    {
-                        name: 'Jorge López Torres',
-                        relationship: 'hermano',
-                        phone: '4494445566',
-                        email: 'jorge.lopez@email.com',
-                        dateOfBirth: new Date('1988-06-22'),
-                        isDeceased: false,
-                        order: 3,
-                        notes: 'Tercer beneficiario - Hermano'
-                    }
-                ],
                 active: true
             },
             {
@@ -165,38 +69,6 @@ const seedCustomers = async () => {
                     phone: '4496667777',
                     relationship: 'Esposo'
                 },
-                beneficiaries: [
-                    {
-                        name: 'Pedro Hernández Castro',
-                        relationship: 'esposo',
-                        phone: '4496667777',
-                        email: 'pedro.hernandez@email.com',
-                        dateOfBirth: new Date('1985-04-18'),
-                        isDeceased: false,
-                        order: 1,
-                        notes: 'Beneficiario principal - Esposo'
-                    },
-                    {
-                        name: 'Daniela Hernández Ruiz',
-                        relationship: 'hija',
-                        phone: '4492223344',
-                        email: 'daniela.hernandez@email.com',
-                        dateOfBirth: new Date('2012-11-05'),
-                        isDeceased: false,
-                        order: 2,
-                        notes: 'Segundo beneficiario - Hija'
-                    },
-                    {
-                        name: 'Rosa Ruiz Mendoza',
-                        relationship: 'madre',
-                        phone: '4498889000',
-                        email: 'rosa.ruiz@email.com',
-                        dateOfBirth: new Date('1960-01-30'),
-                        isDeceased: false,
-                        order: 3,
-                        notes: 'Tercer beneficiario - Madre'
-                    }
-                ],
                 active: true
             },
             {
@@ -211,39 +83,6 @@ const seedCustomers = async () => {
                     phone: '4492223333',
                     relationship: 'Hija'
                 },
-                beneficiaries: [
-                    {
-                        name: 'Laura Ramírez García',
-                        relationship: 'hija',
-                        phone: '4492223333',
-                        email: 'laura.ramirez@email.com',
-                        dateOfBirth: new Date('1995-08-28'),
-                        isDeceased: false,
-                        order: 1,
-                        notes: 'Beneficiaria principal - Hija mayor'
-                    },
-                    {
-                        name: 'Daniel Ramírez García',
-                        relationship: 'hijo',
-                        phone: '4497778899',
-                        email: 'daniel.ramirez@email.com',
-                        dateOfBirth: new Date('1998-03-17'),
-                        isDeceased: false,
-                        order: 2,
-                        notes: 'Segundo beneficiario - Hijo menor'
-                    },
-                    {
-                        name: 'Elena Flores Morales',
-                        relationship: 'esposa',
-                        phone: '4495556677',
-                        email: 'elena.flores@email.com',
-                        dateOfBirth: new Date('1977-12-05'),
-                        isDeceased: true,
-                        deceasedDate: new Date('2022-06-15'),
-                        order: 3,
-                        notes: 'Tercer beneficiario - Esposa (fallecida)'
-                    }
-                ],
                 active: true
             },
             {
@@ -258,45 +97,13 @@ const seedCustomers = async () => {
                     phone: '4493334455',
                     relationship: 'Padre'
                 },
-                beneficiaries: [
-                    {
-                        name: 'Ricardo Torres López',
-                        relationship: 'padre',
-                        phone: '4493334455',
-                        email: 'ricardo.torres@email.com',
-                        dateOfBirth: new Date('1962-07-20'),
-                        isDeceased: false,
-                        order: 1,
-                        notes: 'Beneficiario principal - Padre'
-                    },
-                    {
-                        name: 'Mónica Medina García',
-                        relationship: 'madre',
-                        phone: '4491112244',
-                        email: 'monica.medina@email.com',
-                        dateOfBirth: new Date('1965-10-15'),
-                        isDeceased: false,
-                        order: 2,
-                        notes: 'Segundo beneficiario - Madre'
-                    },
-                    {
-                        name: 'Andrés Torres Medina',
-                        relationship: 'hermano',
-                        phone: '4497779988',
-                        email: 'andres.torres@email.com',
-                        dateOfBirth: new Date('1988-04-08'),
-                        isDeceased: false,
-                        order: 3,
-                        notes: 'Tercer beneficiario - Hermano'
-                    }
-                ],
                 active: true
             }
         ];
 
         const created = await Customer.insertMany(customers);
 
-        console.log(`[SUCCESS] ${created.length} clientes creados con beneficiarios completos\n`);
+        console.log(`[SUCCESS] ${created.length} clientes creados\n`);
 
         console.log('IDs GENERADOS (copiar para testing):');
         console.log('='.repeat(70));
@@ -306,10 +113,6 @@ const seedCustomers = async () => {
             console.log(`  RFC: ${c.rfc || 'N/A'}`);
             console.log(`  Teléfono: ${c.phone}`);
             console.log(`  Email: ${c.email || 'N/A'}`);
-            console.log(`  Beneficiarios: ${c.beneficiaries.length}`);
-            c.beneficiaries.forEach((b, idx) => {
-                console.log(`    ${idx + 1}. ${b.name} (${b.relationship})${b.isDeceased ? ' ✟' : ''}`);
-            });
         });
 
         console.log('\n' + '='.repeat(70));

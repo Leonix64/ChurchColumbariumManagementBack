@@ -90,6 +90,7 @@ const config = {
                 getEnv('FRONTEND_URL'),
                 'http://localhost:5000',
                 'http://localhost:8100', // Columbarium
+                'http://localhost:8101'// Test
                 // Agrega otros orígenes permitidos aquí
             ];
 

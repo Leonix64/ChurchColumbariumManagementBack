@@ -54,6 +54,7 @@ app.use('/api/customers', require('./modules/columbarium/routes/customer.routes'
 app.use('/api/maintenance', require('./modules/columbarium/routes/maintenance.routes'));
 app.use('/api/sales', require('./modules/columbarium/routes/sale.routes'));
 app.use('/api/succession', require('./modules/columbarium/routes/succession.routes'));
+app.use('/api/beneficiaries', require('./modules/columbarium/routes/beneficiary.routes'));
 
 // Ruta de prueba
 app.get('/', (req, res) => {

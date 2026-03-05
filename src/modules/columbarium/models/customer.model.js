@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const BeneficiarySchema = require('./beneficiary.schema');
 
 /**
  * Modelo de CLIENTE
@@ -64,15 +63,14 @@ const CustomerSchema = new mongoose.Schema({
         }
     },
 
-    // Personas que usaran el nicho
-    beneficiaries: {
-        type: [BeneficiarySchema],
-        validate: {
-            validator: function (v) {
-                return v && v.length >= 3;
-            },
-            message: 'Debe haber al menos 3 beneficiarios registrados'
-        }
+    // Trazabilidad de sucesión
+    createdBySuccession: {
+        type: Boolean,
+        default: false,
+        index: true
+    },
+    successionDate: {
+        type: Date
     },
 
     // Estado del cliente
@@ -97,19 +95,6 @@ CustomerSchema.index({
 CustomerSchema.index({ firstName: 1, lastName: 1 });
 CustomerSchema.index({ active: 1, createdAt: -1 });
 
-
-// Método para obtener el próximo beneficiario vivo (ordenado por prioridad)
-CustomerSchema.methods.getNextBeneficiary = function () {
-    if (!this.beneficiaries || this.beneficiaries.length === 0) {
-        return null;
-    }
-
-    const livingBeneficiaries = this.beneficiaries
-        .filter(b => !b.isDeceased)
-        .sort((a, b) => a.order - b.order);
-
-    return livingBeneficiaries.length > 0 ? livingBeneficiaries[0] : null;
-};
 
 // Método para obtener nombre completo
 CustomerSchema.virtual('fullName').get(function () {
