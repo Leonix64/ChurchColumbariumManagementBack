@@ -17,7 +17,8 @@
     "test:sale": "node src/scripts/test-sale-flow.js",
     "test:aws": "node src/scripts/test-aws-connection.js",
     "check:data": "node src/scripts/check-data.js",
-    "generate:secrets": "node src/scripts/generate-secrets.js"
+    "generate:secrets": "node src/scripts/generate-secrets.js",
+    "fix:ownership": "node src/scripts/fix-ownership-history.js"
   },
   "keywords": [
     "church",

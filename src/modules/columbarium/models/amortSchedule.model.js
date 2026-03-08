@@ -49,8 +49,8 @@ const AmortScheduleSchema = new mongoose.Schema({
     status: {
         type: String,
         enum: {
-            values: ['pending', 'partial', 'paid', 'overdue'],
-            message: 'Estado invalido. Debe ser: pending, partial, paid o overdue'
+            values: ['pending', 'partial', 'paid', 'paid_late', 'overdue'],
+            message: 'Estado invalido. Debe ser: pending, partial, paid, paid_late o overdue'
         },
         default: 'pending',
         required: true,

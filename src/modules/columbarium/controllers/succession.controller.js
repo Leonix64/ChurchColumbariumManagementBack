@@ -69,9 +69,14 @@ const successionController = {
                 newOwner = await newCustomerDoc.save({ session });
             }
 
-            // 8d. Actualizar el nicho — nuevo titular
-            niche.currentOwner = newOwner._id;
-            await niche.save({ session });
+            // 8d. Actualizar el nicho con historial de titularidad
+            await niche.transferOwnership(
+                newOwner._id,
+                'succession',
+                notes || 'Sucesión por fallecimiento',
+                userId,
+                { session }
+            );
 
             // 8e. Reasignar la venta activa/vencida al nuevo titular
             const sale = await Sale.findOneAndUpdate(
@@ -193,24 +198,34 @@ const successionController = {
     }),
 
     /**
-     * OBTENER HISTORIAL DE SUCESIONES DE UN NICHO
+     * OBTENER HISTORIAL DE TITULARIDAD DE UN NICHO
      * GET /api/succession/niche/:nicheId/history
+     * Devuelve el array embebido ownershipHistory con owners populados
      */
     getNicheSuccessionHistory: asyncHandler(async (req, res) => {
         const { nicheId } = req.params;
 
-        const history = await Succession
-            .find({ niche: nicheId })
-            .populate('previousOwner', 'firstName lastName')
-            .populate('newOwner', 'firstName lastName')
-            .populate('deceased', 'fullName dateOfDeath')
-            .populate('registeredBy', 'fullName username')
-            .sort({ transferDate: -1 });
+        const niche = await Niche
+            .findById(nicheId)
+            .populate('currentOwner', 'firstName lastName phone email active')
+            .populate('ownershipHistory.owner', 'firstName lastName phone email')
+            .populate('ownershipHistory.registeredBy', 'fullName username')
+            .lean();
 
-        res.status(200).json({
-            nicheId,
-            total: history.length,
-            history
+        if (!niche) {
+            return res.status(404).json({ success: false, message: 'Nicho no encontrado' });
+        }
+
+        const history = (niche.ownershipHistory || [])
+            .sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+
+        return res.json({
+            success: true,
+            data: {
+                niche: { _id: niche._id, code: niche.code, displayNumber: niche.displayNumber },
+                currentOwner: niche.currentOwner || null,
+                history
+            }
         });
     }),
 

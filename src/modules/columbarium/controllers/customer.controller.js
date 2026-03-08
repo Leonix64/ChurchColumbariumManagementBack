@@ -9,22 +9,7 @@ const customerController = {
      * POST /api/customers
      */
     createCustomer: asyncHandler(async (req, res) => {
-        const { firstName, lastName, phone, email, rfc, address, emergencyContact, beneficiaries } = req.body;
-
-        // Validar que vengan al menos 3 beneficiarios
-        if (!beneficiaries || beneficiaries.length < 3) {
-            throw errors.badRequest('Debe haber al menos 3 beneficiarios registrados');
-        }
-
-        // Validar estructura de beneficiarios
-        beneficiaries.forEach((b, index) => {
-            if (!b.name || !b.relationship) {
-                throw errors.badRequest(`Beneficiario ${index + 1}: nombre y relacion son requeridos`);
-            }
-            if (!b.order) {
-                b.order = index + 1; // Asignar orden automatico
-            }
-        });
+        const { firstName, lastName, phone, email, rfc, address, emergencyContact } = req.body;
 
         // Verificar si ya existe un cliente con el mismo RFC (si se proporciona)
         if (rfc) {
@@ -43,7 +28,6 @@ const customerController = {
             rfc,
             address,
             emergencyContact,
-            beneficiaries,
             active: true
         });
 
@@ -58,8 +42,7 @@ const customerController = {
             resourceId: newCustomer._id,
             details: {
                 customerId: newCustomer._id,
-                customerName: `${newCustomer.firstName} ${newCustomer.lastName}`,
-                beneficiariesCount: newCustomer.beneficiaries.length
+                customerName: `${newCustomer.firstName} ${newCustomer.lastName}`
             },
             status: 'success',
             ip: req.ip,

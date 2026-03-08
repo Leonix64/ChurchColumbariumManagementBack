@@ -22,6 +22,8 @@ const AuditSchema = new mongoose.Schema({
             'login', 'logout', 'register', 'change_password',
             // Clientes
             'create_customer', 'update_customer', 'delete_customer',
+            // Beneficiarios
+            'create_beneficiary', 'update_beneficiary', 'bulk_update_beneficiaries',
             'update_beneficiaries', 'mark_beneficiary_deceased',
             // Nichos
             'create_niche', 'update_niche', 'disable_niche', 'enable_niche',

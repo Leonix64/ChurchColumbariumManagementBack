@@ -61,7 +61,16 @@ const BeneficiarySchema = new mongoose.Schema({
         trim: true,
         maxlength: 200
     }
-}, { timestamps: true });
+}, {
+    timestamps: true,
+    versionKey: false,
+    toJSON: {
+        transform(doc, ret) {
+            delete ret.__v;
+            return ret;
+        }
+    }
+});
 
 // Unicidad: no puede haber dos beneficiarios con el mismo orden en el mismo nicho
 BeneficiarySchema.index({ niche: 1, order: 1 }, { unique: true });

@@ -3,6 +3,7 @@ const Niche = require('../models/niche.model');
 const Payment = require('../models/payment.model');
 const Customer = require('../models/customer.model');
 const Refund = require('../models/refund.model');
+const Beneficiary = require('../models/beneficiary.model');
 const Audit = require('../../audit/models/audit.model');
 const AmortSchedule = require('../models/amortSchedule.model');
 const PaymentScheduleLink = require('../models/paymentScheduleLink.model');
@@ -10,6 +11,22 @@ const PaymentScheduleLink = require('../models/paymentScheduleLink.model');
 const mongoose = require('mongoose');
 const { asyncHandler, errors } = require('../../../middlewares/errorHandler');
 const { toDecimal, toNumber } = require('../../../utils/decimal');
+
+/**
+ * Marca como 'overdue' las cuotas pendientes/parciales cuya fecha ya venció.
+ * Se llama al inicio de getSaleById y registerPayment.
+ */
+async function updateOverdueEntries(saleId) {
+    const now = new Date();
+    await AmortSchedule.updateMany(
+        {
+            sale: saleId,
+            status: { $in: ['pending', 'partial'] },
+            dueDate: { $lt: now }
+        },
+        { $set: { status: 'overdue' } }
+    );
+}
 
 const saleController = {
     /**
@@ -117,10 +134,15 @@ const saleController = {
 
             await initialPayment.save({ session });
 
-            // 8. Actualizar nicho
+            // 8. Actualizar nicho con historial de titularidad
             niche.status = 'sold';
-            niche.currentOwner = customerId;
-            await niche.save({ session });
+            await niche.transferOwnership(
+                customerId,
+                'purchase',
+                `Venta ${newSale.folio}`,
+                req.user?.id,
+                { session }
+            );
 
             // 9. Crear log de auditoría
             await Audit.create([{
@@ -179,6 +201,8 @@ const saleController = {
     registerPayment: asyncHandler(async (req, res) => {
         const { id } = req.params;
         const { amount, method, notes, paymentMode, specificPaymentNumber } = req.body;
+
+        await updateOverdueEntries(id);
 
         const session = await mongoose.startSession();
         session.startTransaction();
@@ -244,13 +268,17 @@ const saleController = {
             await newPayment.save({ session });
 
             // 7. Actualizar cada cuota en AmortSchedule
+            const now = new Date();
             const bulkOps = distribution.map(entry => {
                 const originalEntry = pendingEntries.find(
                     e => e._id.equals(entry.amortEntryId)
                 );
                 const newAmountPaid = toNumber(originalEntry.amountPaid) + entry.appliedAmount;
+                const isPaidLate = entry.remainingAfter <= 0
+                    && originalEntry.status === 'overdue'
+                    && originalEntry.dueDate < now;
                 const newStatus = entry.remainingAfter <= 0
-                    ? 'paid'
+                    ? (isPaidLate ? 'paid_late' : 'paid')
                     : entry.appliedAmount > 0
                         ? 'partial'
                         : 'pending';
@@ -400,6 +428,8 @@ const saleController = {
     getSaleById: asyncHandler(async (req, res) => {
         const { id } = req.params;
 
+        await updateOverdueEntries(id);
+
         const [sale, schedule] = await Promise.all([
             Sale.findById(id)
                 .populate('customer', 'firstName lastName phone email address')
@@ -408,17 +438,81 @@ const saleController = {
             AmortSchedule
                 .find({ sale: id })
                 .sort({ number: 1 })
+                .lean()
         ]);
 
         if (!sale) {
             throw errors.notFound('Venta');
         }
 
+        const saleObj = sale.toObject();
+
+        // Serialize Decimal128 money fields of the sale
+        ['totalAmount', 'downPayment', 'balance', 'totalPaid'].forEach(f => {
+            if (saleObj[f] != null) saleObj[f] = parseFloat(saleObj[f].toString());
+        });
+        if (saleObj.niche && saleObj.niche.price) {
+            saleObj.niche.price = parseFloat(saleObj.niche.price.toString());
+        }
+
+        // Load PaymentScheduleLinks for all schedule entries
+        const scheduleIds = schedule.map(s => s._id);
+        const links = await PaymentScheduleLink
+            .find({ amortEntry: { $in: scheduleIds } })
+            .populate('payment', 'receiptNumber amount method paymentDate notes')
+            .lean();
+
+        // Group links by amortEntry
+        const linksByEntry = {};
+        links.forEach(link => {
+            const key = link.amortEntry.toString();
+            if (!linksByEntry[key]) linksByEntry[key] = [];
+            const pmt = link.payment;
+            if (pmt && pmt.amount != null) {
+                pmt.amount = parseFloat(pmt.amount.toString());
+            }
+            linksByEntry[key].push({
+                appliedAmount: parseFloat(link.appliedAmount.toString()),
+                paidOn: link.paidOn || link.createdAt,
+                paymentId: pmt
+            });
+        });
+
+        // Enrich schedule: serialize Decimal128 + inject payments[]
+        const enrichedSchedule = (schedule || []).map(entry => ({
+            ...entry,
+            amount:          entry.amount          ? parseFloat(entry.amount.toString())          : 0,
+            amountPaid:      entry.amountPaid      ? parseFloat(entry.amountPaid.toString())      : 0,
+            amountRemaining: entry.amountRemaining ? parseFloat(entry.amountRemaining.toString()) : 0,
+            payments: linksByEntry[entry._id.toString()] || []
+        }));
+
+        // Cargar reembolso si la venta está cancelada
+        let refundData = null;
+        if (saleObj.status === 'cancelled') {
+            const refundDoc = await Refund.findOne({ sale: id })
+                .select('amount method reason refundDate status receiptNumber')
+                .lean();
+            if (refundDoc) {
+                if (refundDoc.amount != null) {
+                    refundDoc.amount = parseFloat(refundDoc.amount.toString());
+                }
+                refundData = refundDoc;
+            }
+            // Serializar cancellationInfo.refundAmount (Decimal128 embebido)
+            if (saleObj.cancellationInfo?.refundAmount != null) {
+                saleObj.cancellationInfo.refundAmount = parseFloat(
+                    saleObj.cancellationInfo.refundAmount.toString()
+                );
+            }
+        }
+
         res.status(200).json({
             success: true,
             data: {
-                ...sale.toObject(),
-                schedule
+                ...saleObj,
+                schedule: enrichedSchedule,
+                refund: refundData
             }
         });
     }),
@@ -449,8 +543,17 @@ const saleController = {
             Sale.countDocuments(filter)
         ]);
 
+        const salesData = sales.map(s => {
+            const obj = s.toObject();
+            ['totalAmount', 'downPayment', 'balance', 'totalPaid'].forEach(f => {
+                if (obj[f] != null) obj[f] = parseFloat(obj[f].toString());
+            });
+            return obj;
+        });
+
         res.status(200).json({
-            data: sales,
+            success: true,
+            data: salesData,
             pagination: {
                 total,
                 page,
@@ -549,7 +652,15 @@ const saleController = {
 
             //console.log('Venta cancelada:', sale);
 
-            // 4. Liberar nicho
+            // 4. Borrar beneficiarios del nicho
+            await Beneficiary.deleteMany({ niche: niche._id }, { session });
+
+            // 5. Cerrar ownershipHistory y liberar nicho
+            const openEntry = niche.ownershipHistory.find(
+                h => h.owner?.toString() === niche.currentOwner?.toString() && !h.endDate
+            );
+            if (openEntry) openEntry.endDate = new Date();
+
             niche.status = 'available';
             niche.currentOwner = undefined;
             niche.notes = `Venta cancelada: ${sale.folio}. Razon: ${reason.trim()}`;
@@ -610,13 +721,33 @@ const saleController = {
 
             //console.log('Transacción completada exitosamente');
 
-            res.status(200).json({
+            // Serializar Decimal128 para el response
+            const saleObj = sale.toObject();
+            ['totalAmount', 'downPayment', 'balance', 'totalPaid'].forEach(f => {
+                if (saleObj[f] != null) saleObj[f] = parseFloat(saleObj[f].toString());
+            });
+            if (saleObj.cancellationInfo?.refundAmount != null) {
+                saleObj.cancellationInfo.refundAmount = parseFloat(
+                    saleObj.cancellationInfo.refundAmount.toString()
+                );
+            }
+
+            const nicheObj = niche.toObject();
+            if (nicheObj.price != null) nicheObj.price = parseFloat(nicheObj.price.toString());
+
+            let refundObj = null;
+            if (refund) {
+                refundObj = refund.toObject();
+                if (refundObj.amount != null) refundObj.amount = parseFloat(refundObj.amount.toString());
+            }
+
+            return res.status(200).json({
                 success: true,
                 message: 'Venta cancelada exitosamente',
                 data: {
-                    sale,
-                    niche,
-                    refund
+                    sale: saleObj,
+                    niche: nicheObj,
+                    refund: refundObj
                 }
             });
 

@@ -59,7 +59,7 @@ const nicheController = {
         const { id } = req.params;
 
         const niche = await Niche.findById(id)
-            .populate('currentOwner', 'firstName lastName phone email')
+            .populate('currentOwner', 'firstName lastName fullName phone email active')
             .populate('occupants');
 
         if (!niche) {
