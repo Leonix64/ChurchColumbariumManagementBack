@@ -28,6 +28,55 @@ async function updateOverdueEntries(saleId) {
     );
 }
 
+/**
+ * Genera entradas de amortización con distribución justa de redondeo.
+ * Las primeras cuotas absorben el residuo (pesos extra), las últimas quedan
+ * con el monto base. La suma de todos los amounts == balance exactamente.
+ * @param {number} balance   - Monto total a financiar (totalAmount - downPayment)
+ * @param {number} months    - Número de cuotas
+ * @param {Date}   startDate - Fecha base desde la cual calcular vencimientos
+ * @returns {Array} Entradas de amortización (amount como número, sin Decimal128)
+ */
+function buildSchedule(balance, months, startDate) {
+    const base = Math.floor(balance / months);
+    const remainder = Math.round((balance - base * months) * 100) / 100;
+    const extraCount = Math.round(remainder); // cuotas con +$1
+
+    const entries = [];
+    let accumulated = 0;
+
+    for (let i = 0; i < months; i++) {
+        const amount = i < extraCount ? base + 1 : base;
+        accumulated += amount;
+
+        // Fecha: avanzar i+1 meses con corrección de fin de mes
+        let dueDate = new Date(startDate);
+        dueDate.setMonth(dueDate.getMonth() + i + 1);
+        const targetMonth = (startDate.getMonth() + i + 1) % 12;
+        if (dueDate.getMonth() !== targetMonth && dueDate.getMonth() !== (targetMonth + 1) % 12) {
+            dueDate = new Date(dueDate.getFullYear(), dueDate.getMonth(), 0);
+        }
+
+        entries.push({
+            number: i + 1,
+            dueDate,
+            amount,
+            amountPaid: 0,
+            amountRemaining: amount,
+            status: 'pending'
+        });
+    }
+
+    // Ajuste de seguridad: corrige desviaciones por floating-point en última cuota
+    const diff = balance - accumulated;
+    if (diff !== 0) {
+        entries[months - 1].amount += diff;
+        entries[months - 1].amountRemaining += diff;
+    }
+
+    return entries;
+}
+
 const saleController = {
     /**
      * CREAR NUEVA VENTA
@@ -58,39 +107,10 @@ const saleController = {
             // 3. Calculos financieros
             const balance = totalAmount - downPayment;
             const months = 18;
-            const monthlyPaymentAmount = Number((balance / months).toFixed(2));
+            const saleDate = new Date();
 
-            // 4. Generar documentos de cuotas para AmortSchedule
-            const amortDocs = [];
-            let currentDate = new Date();
-
-            for (let i = 1; i <= months; i++) {
-                // Crear fecha base
-                let paymentDate = new Date(currentDate);
-                // Agregar meses correctamente
-                paymentDate.setMonth(paymentDate.getMonth() + i);
-
-                /**
-                 * Si el día del mes resultante es menor al día original,
-                 * significa que "retrocedió" (ej: 31 de enero + 1 mes = 28/29 feb)
-                 * En ese caso, ajustar al último día del mes
-                 */
-                const targetMonth = (currentDate.getMonth() + i) % 12;
-                if (paymentDate.getMonth() !== targetMonth && paymentDate.getMonth() !== (targetMonth + 1) % 12) {
-                    // Retrocedio, ajustar al ultimo dia del mes anterior
-                    paymentDate = new Date(paymentDate.getFullYear(), paymentDate.getMonth(), 0);
-                }
-
-                amortDocs.push({
-                    sale: null, // se asignará después de crear Sale
-                    number: i,
-                    dueDate: paymentDate,
-                    amount: toDecimal(monthlyPaymentAmount),
-                    amountPaid: toDecimal(0),
-                    amountRemaining: toDecimal(monthlyPaymentAmount),
-                    status: 'pending'
-                });
-            }
+            // 4. Generar cuotas con distribución decreciente y redondeo justo
+            const amortEntries = buildSchedule(balance, months, saleDate);
 
             // 5. Crear venta
             const newSale = new Sale({
@@ -109,7 +129,14 @@ const saleController = {
             await newSale.save({ session });
 
             // 6. Insertar cuotas en AmortSchedule (misma transacción)
-            const docsToInsert = amortDocs.map(doc => ({ ...doc, sale: newSale._id }));
+            // Convertir a Decimal128 aquí, no en buildSchedule
+            const docsToInsert = amortEntries.map(e => ({
+                ...e,
+                sale: newSale._id,
+                amount: toDecimal(e.amount),
+                amountRemaining: toDecimal(e.amountRemaining),
+                amountPaid: toDecimal(0)
+            }));
             await AmortSchedule.insertMany(docsToInsert, { session });
 
             // 7. Registrar pago inicial (enganche)

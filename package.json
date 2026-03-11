@@ -18,7 +18,8 @@
     "test:aws": "node src/scripts/test-aws-connection.js",
     "check:data": "node src/scripts/check-data.js",
     "generate:secrets": "node src/scripts/generate-secrets.js",
-    "fix:ownership": "node src/scripts/fix-ownership-history.js"
+    "fix:ownership": "node src/scripts/fix-ownership-history.js",
+    "verify:amort": "node src/scripts/verify-amort-schedule.js"
   },
   "keywords": [
     "church",
