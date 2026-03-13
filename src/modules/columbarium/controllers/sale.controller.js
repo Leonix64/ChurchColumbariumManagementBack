@@ -49,13 +49,12 @@ function buildSchedule(balance, months, startDate) {
         const amount = i < extraCount ? base + 1 : base;
         accumulated += amount;
 
-        // Fecha: avanzar i+1 meses con corrección de fin de mes
-        let dueDate = new Date(startDate);
-        dueDate.setMonth(dueDate.getMonth() + i + 1);
-        const targetMonth = (startDate.getMonth() + i + 1) % 12;
-        if (dueDate.getMonth() !== targetMonth && dueDate.getMonth() !== (targetMonth + 1) % 12) {
-            dueDate = new Date(dueDate.getFullYear(), dueDate.getMonth(), 0);
-        }
+        // Avanzar i+1 meses desde startDate
+        const d = new Date(startDate);
+        d.setDate(1);
+        d.setMonth(d.getMonth() + i + 1);
+
+        const dueDate = new Date(d.getFullYear(), d.getMonth() + 1, 0);
 
         entries.push({
             number: i + 1,
@@ -508,8 +507,8 @@ const saleController = {
         // Enrich schedule: serialize Decimal128 + inject payments[]
         const enrichedSchedule = (schedule || []).map(entry => ({
             ...entry,
-            amount:          entry.amount          ? parseFloat(entry.amount.toString())          : 0,
-            amountPaid:      entry.amountPaid      ? parseFloat(entry.amountPaid.toString())      : 0,
+            amount: entry.amount ? parseFloat(entry.amount.toString()) : 0,
+            amountPaid: entry.amountPaid ? parseFloat(entry.amountPaid.toString()) : 0,
             amountRemaining: entry.amountRemaining ? parseFloat(entry.amountRemaining.toString()) : 0,
             payments: linksByEntry[entry._id.toString()] || []
         }));
@@ -555,9 +554,9 @@ const saleController = {
         if (status) filter.status = status;
         if (customerId) filter.customer = customerId;
 
-        const page  = Math.max(1, parseInt(req.query.page)  || 1);
+        const page = Math.max(1, parseInt(req.query.page) || 1);
         const limit = Math.min(50, parseInt(req.query.limit) || 20);
-        const skip  = (page - 1) * limit;
+        const skip = (page - 1) * limit;
 
         const [sales, total] = await Promise.all([
             Sale.find(filter)
@@ -812,7 +811,7 @@ const saleController = {
         const revenue = rawRevenue
             ? {
                 totalRevenue: toNumber(rawRevenue.totalRevenue),
-                totalPaid:    toNumber(rawRevenue.totalPaid),
+                totalPaid: toNumber(rawRevenue.totalPaid),
                 totalBalance: toNumber(rawRevenue.totalBalance)
             }
             : { totalRevenue: 0, totalPaid: 0, totalBalance: 0 };

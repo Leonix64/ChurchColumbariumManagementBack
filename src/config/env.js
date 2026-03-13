@@ -1,8 +1,3 @@
-/**
- * CONFIGURACION Y VALIDACION DE VARIABLES DE ENTORNO
- * Centraliza y valida todas las variables antes de iniciar la app
- */
-
 require('dotenv').config();
 
 // Variables requeridas (criticas)
@@ -21,9 +16,7 @@ const optionalVars = {
     FRONTEND_URL: 'http://localhost:1234'
 };
 
-/**
- * Valida que todas las variables requeridas existan
- */
+// Valida que todas las variables requeridas existan
 const validateEnv = () => {
     const missing = requiredVars.filter(varName => !process.env[varName]);
 
