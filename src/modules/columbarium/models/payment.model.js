@@ -2,8 +2,9 @@ const mongoose = require('mongoose');
 const { toNumber } = require('../../../utils/decimal');
 
 /**
- * Modelo de PAGO
- * Registra cada pago realizado (enganche, mensualidad, mantenimiento, etc.)
+ * PAGO
+ * Registro de cada pago realizado: enganche, mensualidad o mantenimiento.
+ * Los pagos de venta se vinculan a cuotas mediante PaymentScheduleLink.
  */
 
 const PaymentSchema = new mongoose.Schema({
@@ -28,7 +29,7 @@ const PaymentSchema = new mongoose.Schema({
         index: true
     },
 
-    // Folio consecutivo unico (ej: REC-00001)
+    // Folio unico (ej: REC-00001)
     receiptNumber: {
         type: String,
         unique: true,
@@ -57,14 +58,12 @@ const PaymentSchema = new mongoose.Schema({
         required: false
     },
 
-    // Concepto del pago
     concept: {
         type: String,
         enum: ['down_payment', 'monthly_payment', 'maintenance', 'extra'],
         required: true
     },
 
-    // Metodo de pago
     method: {
         type: String,
         enum: ['cash', 'card', 'transfer'],
@@ -72,14 +71,13 @@ const PaymentSchema = new mongoose.Schema({
         required: true
     },
 
-    // Fecha de pago
     paymentDate: {
         type: Date,
         default: Date.now,
         index: true
     },
 
-    // Si es mantenimiento, a que año corresponde?
+    // Mantenimiento, a que año corresponde?
     maintenanceYear: {
         type: Number,
         required: function () {
@@ -87,21 +85,18 @@ const PaymentSchema = new mongoose.Schema({
         }
     },
 
-    // Notas del pago
     notes: {
         type: String,
         trim: true,
         maxlength: [500, 'Las notas no pueden tener más de 500 caracteres']
     },
 
-    //Estado del pago
     status: {
         type: String,
         enum: ['completed', 'cancelled', 'refunded'],
         default: 'completed'
     },
 
-    // Info de cancelacion (si aplica)
     cancellationInfo: {
         cancelledBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         cancelledAt: Date,
@@ -115,7 +110,7 @@ PaymentSchema.index({ customer: 1, paymentDate: -1 });
 PaymentSchema.index({ niche: 1, concept: 1, maintenanceYear: 1 }); // Para buscar mantenimientos
 PaymentSchema.index({ status: 1, createdAt: -1 });
 
-// Metodo: Cancelar pago
+// Cancelar pago
 PaymentSchema.methods.cancelPayment = function (userId, reason) {
     this.status = 'cancelled';
     this.cancellationInfo = {
@@ -127,7 +122,7 @@ PaymentSchema.methods.cancelPayment = function (userId, reason) {
     return this;
 };
 
-// Validación condicional: sale requerido solo para conceptos de venta
+// Sale requerido solo para conceptos de venta
 PaymentSchema.pre('validate', function () {
     const ventaConcepts = ['down_payment', 'monthly_payment', 'extra'];
 
@@ -149,17 +144,16 @@ PaymentSchema.pre('validate', function () {
         if (this.sale) {
             this.sale = undefined;
         }
-        // Customer se auto-completa del propietario actual del nicho
     }
 });
 
-// Asegurar que virtuals se incluyan en JSON y convertir Decimal128 → Number
+// Asegurar que virtuals se incluyan en JSON y convertir Decimal128 -> Number
 PaymentSchema.set('toJSON', {
     virtuals: true,
     transform: function (doc, ret) {
-        if (ret.amount != null)        ret.amount        = toNumber(ret.amount);
+        if (ret.amount != null) ret.amount = toNumber(ret.amount);
         if (ret.balanceBefore != null) ret.balanceBefore = toNumber(ret.balanceBefore);
-        if (ret.balanceAfter != null)  ret.balanceAfter  = toNumber(ret.balanceAfter);
+        if (ret.balanceAfter != null) ret.balanceAfter = toNumber(ret.balanceAfter);
         return ret;
     }
 });
