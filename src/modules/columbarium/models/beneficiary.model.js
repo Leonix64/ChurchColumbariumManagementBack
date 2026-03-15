@@ -2,9 +2,9 @@ const mongoose = require('mongoose');
 const { toNumber } = require('../../../utils/decimal');
 
 /**
- * Modelo de BENEFICIARIO
- * Persona designada para heredar el nicho en caso de fallecimiento del titular.
- * Colección propia — referencia al Niche (no embebido en Customer).
+ * BENEFICIARIO
+ * Persona designada para heredar el nicho si el titular fallece.
+ * Coleccion independiente referenciada al nicho.
  */
 
 const BeneficiarySchema = new mongoose.Schema({
@@ -14,6 +14,7 @@ const BeneficiarySchema = new mongoose.Schema({
         required: [true, 'El nicho es requerido'],
         index: true
     },
+
     name: {
         type: String,
         required: [true, 'El nombre es requerido'],
@@ -21,6 +22,7 @@ const BeneficiarySchema = new mongoose.Schema({
         minlength: 3,
         maxlength: 100
     },
+
     relationship: {
         type: String,
         required: [true, 'La relación es requerida'],
@@ -34,21 +36,25 @@ const BeneficiarySchema = new mongoose.Schema({
             'cuñado', 'cuñada', 'otro'
         ]
     },
+
     phone: {
         type: String,
         match: /^[0-9]{10}$/
     },
+
     email: {
         type: String,
         lowercase: true,
         trim: true
     },
+
     dateOfBirth: Date,
     isDeceased: {
         type: Boolean,
         default: false,
         index: true
     },
+
     deceasedDate: Date,
     order: {
         type: Number,
@@ -56,6 +62,7 @@ const BeneficiarySchema = new mongoose.Schema({
         min: 1,
         index: true
     },
+
     notes: {
         type: String,
         trim: true,
@@ -72,10 +79,9 @@ const BeneficiarySchema = new mongoose.Schema({
     }
 });
 
-// Unicidad: no puede haber dos beneficiarios con el mismo orden en el mismo nicho
+// Unicidad
 BeneficiarySchema.index({ niche: 1, order: 1 }, { unique: true });
 
-// Consulta frecuente: beneficiarios vivos de un nicho
 BeneficiarySchema.index({ niche: 1, isDeceased: 1 });
 
 module.exports = mongoose.model('Beneficiary', BeneficiarySchema);

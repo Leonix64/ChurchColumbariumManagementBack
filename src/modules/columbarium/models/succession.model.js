@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
 
 /**
- * Modelo de SUCESIÓN DE TITULARIDAD
- * Registra cada transferencia de propietario en un nicho.
- * Reemplaza la lectura de Niche.ownershipHistory[] para el historial.
+ * SUCESIÓN DE TITULARIDAD
+ * Registro de cada transferencia de propietario en un nicho.
+ * Puede ser por fallecimiento, herencia o transferencia manual.
  */
 
 const SuccessionSchema = new mongoose.Schema({
@@ -77,7 +77,7 @@ const SuccessionSchema = new mongoose.Schema({
     collection: 'successions'
 });
 
-// Índices compuestos
+// Índices
 SuccessionSchema.index({ niche: 1, transferDate: -1 });
 SuccessionSchema.index({ previousOwner: 1 });
 SuccessionSchema.index({ newOwner: 1 });

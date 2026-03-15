@@ -2,21 +2,19 @@ const mongoose = require('mongoose');
 const { toNumber, toDecimal } = require('../../../utils/decimal');
 
 /**
- * Modelo de VENTA
- * Registra la compra de un nicho con credito a 18 meses
+ * VENTA
+ * Compra de un nicho con crédito a 18 meses.
+ * Contiene montos totales, balance y estado del contrato.
+ * Las cuotas están en AmortSchedule (colección separada).
  */
 
 const SaleSchema = new mongoose.Schema({
-    // Nicho vendido
     niche: { type: mongoose.Schema.Types.ObjectId, ref: 'Niche', required: true },
 
-    // Cliente comprador
     customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
 
-    // Usuario que registro la venta
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
 
-    // Folio unico de la venta
     folio: { type: String, unique: true },
 
     // Montos financieros
@@ -35,7 +33,6 @@ const SaleSchema = new mongoose.Schema({
         }
     },
 
-    // El enganche inicial dinamico
     balance: {
         type: mongoose.Schema.Types.Decimal128,
         required: true
@@ -59,7 +56,6 @@ const SaleSchema = new mongoose.Schema({
         index: true
     },
 
-    // Informacion de cancelacion
     cancellationInfo: {
         cancelledBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         cancelledAt: Date,
@@ -69,7 +65,6 @@ const SaleSchema = new mongoose.Schema({
         refundNotes: String
     },
 
-    // Notas adicionales
     notes: String
 }, { timestamps: true, versionKey: false });
 
@@ -77,7 +72,7 @@ const SaleSchema = new mongoose.Schema({
 SaleSchema.index({ customer: 1, status: 1 });
 SaleSchema.index({ status: 1, createdAt: -1 });
 
-// Metodo: Cancelar venta
+// Cancelar venta
 SaleSchema.methods.cancel = function (userId, reason, refundAmount, refundMethod, refundNotes) {
     this.status = 'cancelled';
     this.cancellationInfo = {
@@ -92,14 +87,14 @@ SaleSchema.methods.cancel = function (userId, reason, refundAmount, refundMethod
     return this;
 };
 
-// Asegurar que virtuals se incluyan en JSON y convertir Decimal128 → Number
+// Asegurar que virtuals se incluyan en JSON y convertir Decimal128 -> Number
 SaleSchema.set('toJSON', {
     virtuals: true,
     transform: function (doc, ret) {
-        if (ret.totalAmount != null)  ret.totalAmount  = toNumber(ret.totalAmount);
-        if (ret.downPayment != null)  ret.downPayment  = toNumber(ret.downPayment);
-        if (ret.balance != null)      ret.balance      = toNumber(ret.balance);
-        if (ret.totalPaid != null)    ret.totalPaid    = toNumber(ret.totalPaid);
+        if (ret.totalAmount != null) ret.totalAmount = toNumber(ret.totalAmount);
+        if (ret.downPayment != null) ret.downPayment = toNumber(ret.downPayment);
+        if (ret.balance != null) ret.balance = toNumber(ret.balance);
+        if (ret.totalPaid != null) ret.totalPaid = toNumber(ret.totalPaid);
         if (ret.cancellationInfo && ret.cancellationInfo.refundAmount != null) {
             ret.cancellationInfo.refundAmount = toNumber(ret.cancellationInfo.refundAmount);
         }
@@ -108,7 +103,7 @@ SaleSchema.set('toJSON', {
 });
 SaleSchema.set('toObject', { virtuals: true });
 
-// Middleware: Validar que balance = totalAmount - downPayment (solo en creación)
+// Validar que balance = totalAmount - downPayment (solo en creación)
 SaleSchema.pre('validate', function (next) {
     if (this.isNew && this.totalAmount && this.downPayment) {
         this.balance = toDecimal(

@@ -1,12 +1,12 @@
 const mongoose = require('mongoose');
 
 /**
- * Modelo de DIFUNTO
- * Personas cuyas cenizas estan depositadas en un nicho
+ * DIFUNTO
+ * Persona cuyas cenizas están depositadas en un nicho.
+ * Un nicho puede tener varios ocupantes.
  */
 
 const DeceasedSchema = new mongoose.Schema({
-    // Nicho donde esta depositado
     niche: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Niche',
@@ -17,9 +17,8 @@ const DeceasedSchema = new mongoose.Schema({
     fullName: { type: String, required: true },
     dateOfBirth: Date,
     dateOfDeath: Date,
-    dateOfInterment: Date, // Fecha en que deposito la urna
+    dateOfInterment: Date,
 
-    // Relacion con el propietario del nicho
     relationshipToOwner: {
         type: String,
         enum: [

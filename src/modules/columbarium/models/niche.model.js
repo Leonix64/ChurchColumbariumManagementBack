@@ -32,9 +32,10 @@ const OwnershipHistorySchema = new mongoose.Schema({
 }, { _id: true, timestamps: true });
 
 /**
- * Modelo de NICHO
- * Representa cada espacio del columbario
- * Cada nicho tiene un codigo unico y propiedades especificas
+ * NICHO
+ * Espacio físico del columbario donde se depositan urnas.
+ * Tiene ubicación, precio, estado y propietario actual.
+ * Mantiene historial de titularidad embebido.
  */
 
 const NicheSchema = new mongoose.Schema({
@@ -166,32 +167,32 @@ NicheSchema.index({ module: 1, section: 1, row: 1 });
 NicheSchema.index({ status: 1, type: 1 });
 NicheSchema.index({ currentOwner: 1, status: 1 });
 
-// Metodo virtual para verificar disponibilidad
+// Verificar disponibilidad
 NicheSchema.virtual('isAvailable').get(function () {
     return this.status === 'available';
 });
 
-// Metodo para marcar como vendido
+// Marcar como vendido
 NicheSchema.methods.markAsSold = async function (customerId) {
     this.status = 'sold';
     this.currentOwner = customerId;
     return await this.save();
 };
 
-// Metodo para marcar como reservado
+// Marcar como reservado
 NicheSchema.methods.markAsReserved = async function () {
     this.status = 'reserved';
     return await this.save();
 };
 
-// Metodo para liberar (volver disponible)
+// Liberar (volver disponible)
 NicheSchema.methods.release = async function () {
     this.status = 'available';
     this.currentOwner = undefined;
     return await this.save();
 };
 
-// Método para transferir titularidad (sucesión/transferencia)
+// Transferir titularidad (sucesión/transferencia)
 NicheSchema.methods.transferOwnership = async function (newOwnerId, reason, notes, registeredBy, options) {
     // Cerrar el registro actual en el historial
     if (this.currentOwner) {
@@ -218,7 +219,7 @@ NicheSchema.methods.transferOwnership = async function (newOwnerId, reason, note
     return await this.save(options || {});
 };
 
-// Convertir Decimal128 → Number en JSON e incluir virtuals
+// Convertir Decimal128 -> Number en JSON e incluir virtuals
 NicheSchema.set('toJSON', {
     virtuals: true,
     transform: function (doc, ret) {
