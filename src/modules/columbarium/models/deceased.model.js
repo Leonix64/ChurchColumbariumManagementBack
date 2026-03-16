@@ -3,7 +3,8 @@ const mongoose = require('mongoose');
 /**
  * DIFUNTO
  * Persona cuyas cenizas están depositadas en un nicho.
- * Un nicho puede tener varios ocupantes.
+ * Un nicho puede tener varios ocupantes (array en Niche.occupants).
+ * Registra fechas importantes y relación con el propietario.
  */
 
 const DeceasedSchema = new mongoose.Schema({
