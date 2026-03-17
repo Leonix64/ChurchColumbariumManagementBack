@@ -43,8 +43,9 @@ const authLimiter = rateLimit({
     legacyHeaders: false
 });
 
-// Aplicar rate limit general a todas las rutas /api
+// Aplicar rate limiters
 app.use('/api', generalLimiter);
+app.use('/api/auth', authLimiter);
 
 // Rutas
 app.use('/api/auth', require('./modules/auth/routes/auth.routes'));
@@ -109,7 +110,7 @@ app.get('/', (req, res) => {
         },
         links: {
             repository: 'https://github.com/Leonix64/ChurchColumbariumManagementBack',
-            frontend: config.cors.origin
+            frontend: config.cors.allowedOrigins[0]
         }
     });
 });
@@ -136,33 +137,34 @@ app.use(errorHandler);
 const PORT = config.server.port;
 
 app.listen(PORT, '0.0.0.0', () => {
-    console.log('');
-    console.log('='.repeat(60));
-    console.log('SERVER STARTED SUCCESSFULLY');
-    console.log('='.repeat(60));
-    console.log('');
-    console.log(`Environment:        ${config.server.env}`);
-    console.log(`Port:               ${PORT}`);
-    console.log(`URL:                http://localhost:${PORT}`);
-    console.log(`API Docs:           http://localhost:${PORT}/`);
-    console.log(`Health Check:       http://localhost:${PORT}/health`);
-    console.log('');
-    console.log(`JWT:                Configured`);
-    console.log(`Database:           Connected`);
-    console.log(`CORS:               ${config.cors.origin}`);
-    console.log('');
+    const I = 53;
+    const row = (s = '') => `│ ${s.padEnd(I - 1)}│`;
+    const sep = `├${'─'.repeat(I)}┤`;
+    const top = `┌${'─'.repeat(I)}┐`;
+    const bot = `└${'─'.repeat(I)}┘`;
+    const center = (s) => {
+        const l = Math.floor((I - s.length) / 2);
+        return `│${' '.repeat(l)}${s}${' '.repeat(I - s.length - l)}│`;
+    };
 
-    if (config.server.isDevelopment) {
-        console.log('DEVELOPMENT COMMANDS:');
-        console.log('  npm run seed:admin      - Create admin user');
-        console.log('  npm run seed:niches     - Populate niches database');
-        console.log('  npm run seed:customers  - Create test customers');
-        console.log('  npm run generate:secrets - Generate new JWT secrets');
-        console.log('');
-    }
+    const corsRows = config.cors.allowedOrigins
+        .map((url, i) => row(i === 0 ? `CORS        ${url}` : `            ${url}`))
+        .join('\n');
 
-    console.log('='.repeat(60));
-    console.log('');
+    console.log([
+        '',
+        top,
+        center('ChurchSystem API  ·  v2.0.0'),
+        sep,
+        row(`Env         ${config.server.env}`),
+        row(`Running     http://localhost:${PORT}`),
+        row(`Health      http://localhost:${PORT}/health`),
+        row(`Database    MongoDB Atlas · connected`),
+        sep,
+        corsRows,
+        bot,
+        ''
+    ].join('\n'));
 });
 
 // Errores de promesas no manejadas

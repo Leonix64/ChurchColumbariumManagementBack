@@ -3,8 +3,9 @@ const Audit = require('../../audit/models/audit.model');
 const { asyncHandler, errors } = require('../../../middlewares/errorHandler');
 
 const nicheController = {
+
     /**
-     * OBTENER TODOS LOS NICHOS
+     * LISTAR NICHOS CON FILTROS
      * GET /api/niches
      * Query params: module, section, status, type
      */
@@ -12,13 +13,11 @@ const nicheController = {
         const { module, section, status, type } = req.query;
         let filter = {};
 
-        // Construir filtro dinamico
         if (module) filter.module = module.toUpperCase();
         if (section) filter.section = section.toUpperCase();
         if (status) filter.status = status;
         if (type) filter.type = type;
 
-        // Buscar con orden por numero visible
         const niches = await Niche.find(filter)
             .populate('currentOwner', 'firstName lastName phone email')
             .sort({ displayNumber: 1 });
@@ -100,7 +99,6 @@ const nicheController = {
             throw errors.notFound('Nicho');
         }
 
-        // Auditoría
         await Audit.create({
             user: req.user.id,
             username: req.user.username,
@@ -126,25 +124,20 @@ const nicheController = {
      * GET /api/niches/stats
      */
     getNicheStats: asyncHandler(async (req, res) => {
-        // Estadisticas por estado
         const statusStats = await Niche.aggregate([
             { $group: { _id: '$status', count: { $sum: 1 } } }
         ]);
 
-        // Estadisticas por tipo
         const typeStats = await Niche.aggregate([
             { $group: { _id: '$type', count: { $sum: 1 } } }
         ]);
 
-        // Estadisticas por modulo
         const moduleStats = await Niche.aggregate([
             { $group: { _id: '$module', count: { $sum: 1 } } }
         ]);
 
-        // Total de nichos
         const total = await Niche.countDocuments();
 
-        // Precio promedio
         const priceStats = await Niche.aggregate([
             {
                 $group: {
@@ -228,7 +221,6 @@ const nicheController = {
         niche.price = price;
         await niche.save();
 
-        // Auditoría
         await Audit.create({
             user: req.user.id,
             username: req.user.username,
@@ -281,7 +273,6 @@ const nicheController = {
         niche.price = price;
         await niche.save();
 
-        // Auditoría
         await Audit.create({
             user: req.user.id,
             username: req.user.username,
@@ -335,7 +326,6 @@ const nicheController = {
         niche.disabledBy = req.user.id;
         await niche.save();
 
-        // Auditoría
         await Audit.create({
             user: req.user.id,
             username: req.user.username,
@@ -383,7 +373,6 @@ const nicheController = {
         const updated = await Niche.find({ _id: { $in: nicheIds } })
             .select('code displayNumber module section status');
 
-        // Auditoría
         await Audit.create({
             user: req.user.id,
             username: req.user.username,
@@ -411,7 +400,6 @@ const nicheController = {
     createNiche: asyncHandler(async (req, res) => {
         const { module, section, row, displayNumber, type, price } = req.body;
 
-        // Validaciones
         if (!module || !section) {
             throw errors.badRequest('Módulo y sección son requeridos');
         }
@@ -428,7 +416,7 @@ const nicheController = {
             throw errors.badRequest('El precio es requerido');
         }
 
-        // Verificar que el displayNumber no esté repetido en el mismo módulo-sección
+        // Validar unicidad de displayNumber en módulo-sección
         const duplicateNumber = await Niche.findOne({ module, section, displayNumber });
         if (duplicateNumber) {
             throw errors.conflict(`Ya existe el nicho #${displayNumber} en módulo ${module}, sección ${section}`);
@@ -438,7 +426,6 @@ const nicheController = {
         const nichesInRow = await Niche.countDocuments({ module, section, row });
         const number = nichesInRow + 1;
 
-        // Generar código automático
         const code = `${module}-${section}-${row}-${displayNumber}`;
 
         // Verificar que el código no exista (por si acaso)
@@ -459,7 +446,6 @@ const nicheController = {
             status: 'available'
         });
 
-        // Auditoría
         await Audit.create({
             user: req.user.id,
             username: req.user.username,

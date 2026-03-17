@@ -21,13 +21,11 @@ const auditController = {
 
         let filter = {};
 
-        // Filtros
         if (module) filter.module = module;
         if (action) filter.action = action;
         if (user) filter.user = user;
         if (status) filter.status = status;
 
-        // Filtro por rango de fechas
         if (startDate || endDate) {
             filter.timestamp = {};
             if (startDate) filter.timestamp.$gte = new Date(startDate);
@@ -76,31 +74,26 @@ const auditController = {
             }
         }
 
-        // Total de logs
         const total = await Audit.countDocuments(dateFilter);
 
-        // Por módulo
         const byModule = await Audit.aggregate([
             { $match: dateFilter },
             { $group: { _id: '$module', count: { $sum: 1 } } },
             { $sort: { count: -1 } }
         ]);
 
-        // Por acción
         const byAction = await Audit.aggregate([
             { $match: dateFilter },
             { $group: { _id: '$action', count: { $sum: 1 } } },
             { $sort: { count: -1 } }
         ]);
 
-        // Por estado
         const byStatus = await Audit.aggregate([
             { $match: dateFilter },
             { $group: { _id: '$status', count: { $sum: 1 } } },
             { $sort: { count: -1 } }
         ]);
 
-        // Top usuarios mas activos
         const topUsers = await Audit.aggregate([
             { $match: dateFilter },
             { $group: { _id: '$user', count: { $sum: 1 } } },
@@ -125,7 +118,6 @@ const auditController = {
             }
         ]);
 
-        // Actividad por dia (ultimos 7 dias)
         const last7Days = new Date();
         last7Days.setDate(last7Days.getDate() - 7);
 
@@ -146,7 +138,6 @@ const auditController = {
             { $sort: { _id: 1 } }
         ]);
 
-        // Errores recientes
         const recentErrors = await Audit.find({
             status: 'error',
             ...dateFilter
@@ -245,9 +236,9 @@ const auditController = {
     }),
 
     /**
-     * CREAR LOG MANUALMENTE (Opcional)
      * POST /api/audit
-     * Solo para casos especiales donde se necesite registrar algo manual
+     * Crear log manualmente (casos especiales)
+     * Body: { action, module, resourceType, resourceId, details, status }
      */
     createLog: asyncHandler(async (req, res) => {
         const {
@@ -286,9 +277,9 @@ const auditController = {
     }),
 
     /**
-     * LIMPIAR LOGS ANTIGUOS
      * DELETE /api/audit/cleanup
-     * Elimina logs mas antiguos de X dias (solo admin)
+     * Limpiar logs antiguos
+     * Body: { daysOld } (minimo 90 dias)
      */
     cleanupOldLogs: asyncHandler(async (req, res) => {
         // Soportar body y query params
@@ -317,8 +308,9 @@ const auditController = {
     }),
 
     /**
-     * REPORTE DE ACTIVIDAD POR RANGO DE FECHAS
      * GET /api/audit/report
+     * Reporte de actividad por rango de fechas
+     * Query params: startDate, endDate, groupBy (hour|day|week|month)
      */
     getActivityReport: asyncHandler(async (req, res) => {
         const { startDate, endDate, groupBy = 'day' } = req.query;

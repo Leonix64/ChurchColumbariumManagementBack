@@ -1,4 +1,5 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 
 // Variables requeridas (criticas)
 const requiredVars = [
@@ -16,7 +17,10 @@ const optionalVars = {
     FRONTEND_URL: 'http://localhost:1234'
 };
 
-// Valida que todas las variables requeridas existan
+/**
+ * Valida que existan todas las variables de entorno requeridas
+ * Termina el proceso si falta alguna o si los secretos JWT son demasiado cortos
+ */
 const validateEnv = () => {
     const missing = requiredVars.filter(varName => !process.env[varName]);
 
@@ -45,14 +49,16 @@ const validateEnv = () => {
 };
 
 /**
- * Obtiene una variable de entorno
+ * Obtiene una variable de entorno con fallback
+ * Prioridad: process.env > optionalVars > defaultValue
  */
 const getEnv = (key, defaultValue = undefined) => {
     return process.env[key] || optionalVars[key] || defaultValue;
 };
 
 /**
- * Configuración exportada
+ * Configuración centralizada de la aplicación
+ * Agrupa todas las variables de entorno en una estructura organizada
  */
 const config = {
     // JWT
@@ -78,19 +84,21 @@ const config = {
 
     // CORS
     cors: {
+        allowedOrigins: [
+            getEnv('FRONTEND_URL'),
+            'http://localhost:5000',
+            'http://localhost:8100',
+            'http://localhost:8101'
+        ],
         origin: function (origin, callback) {
-            const allowedOrigins = [
+            const allowed = [
                 getEnv('FRONTEND_URL'),
                 'http://localhost:5000',
-                'http://localhost:8100', // Columbarium
-                'http://localhost:8101'// Test
-                // Agrega otros orígenes permitidos aquí
+                'http://localhost:8100',
+                'http://localhost:8101'
             ];
-
-            // Permitir requests sin origen
             if (!origin) return callback(null, true);
-
-            if (allowedOrigins.indexOf(origin) !== -1) {
+            if (allowed.includes(origin)) {
                 callback(null, true);
             } else {
                 callback(new Error('Not allowed by CORS'));

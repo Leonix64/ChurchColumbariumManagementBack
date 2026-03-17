@@ -3,7 +3,10 @@ const router = express.Router();
 const auditController = require('../controllers/audit.controller');
 const authMiddleware = require('../../auth/middlewares/auth.middleware');
 
-// Solo admin puede acceder a los logs
+/**
+ * AUDITORÍA - SOLO ADMINISTRADORES
+ * Todas las rutas requieren autenticación y rol de admin
+ */
 router.use(authMiddleware.verifyToken);
 router.use(authMiddleware.checkRole('admin'));
 

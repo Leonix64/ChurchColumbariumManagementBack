@@ -4,6 +4,7 @@ const Audit = require('../../audit/models/audit.model');
 const { asyncHandler, errors } = require('../../../middlewares/errorHandler');
 
 const customerController = {
+
     /**
      * CREAR NUEVO CLIENTE
      * POST /api/customers
@@ -11,7 +12,6 @@ const customerController = {
     createCustomer: asyncHandler(async (req, res) => {
         const { firstName, lastName, phone, email, rfc, address, emergencyContact } = req.body;
 
-        // Verificar si ya existe un cliente con el mismo RFC (si se proporciona)
         if (rfc) {
             const existingCustomer = await Customer.findOne({ rfc: rfc.toUpperCase() });
             if (existingCustomer) {
@@ -19,7 +19,6 @@ const customerController = {
             }
         }
 
-        // Crear cliente
         const newCustomer = await Customer.create({
             firstName,
             lastName,
@@ -31,7 +30,6 @@ const customerController = {
             active: true
         });
 
-        // Auditoría
         await Audit.create({
             user: req.user?.id,
             username: req.user?.username,
@@ -57,9 +55,9 @@ const customerController = {
     }),
 
     /**
-     * BUSCAR CLIENTES
+     * BUSCAR CLIENTES CON FILTROS
      * GET /api/customers
-     * Query params: search (busca en nombre, apellido o RFC)
+     * Query params: search (text index), active (boolean)
      */
     getCustomers: asyncHandler(async (req, res) => {
         const { search, active } = req.query;
@@ -70,7 +68,6 @@ const customerController = {
             query.$text = { $search: search };
         }
 
-        // Filtro por estado activo/inactivo
         if (active !== undefined) {
             query.active = active === 'true';
         }
@@ -113,12 +110,11 @@ const customerController = {
         const { id } = req.params;
         const updates = req.body;
 
-        // No permitir actualizar ciertos campos
         delete updates._id;
         delete updates.createdAt;
         delete updates.updatedAt;
 
-        // Si se actualiza RFC, verificar que no exista
+        // Validar unicidad de RFC si se está actualizando
         if (updates.rfc) {
             const existingCustomer = await Customer.findOne({
                 rfc: updates.rfc.toUpperCase(),
@@ -234,8 +230,9 @@ const customerController = {
     }),
 
     /**
-     * OBTENER VENTAS DE UN CLIENTE
+     * OBTENER VENTAS DE UN CLIENTE CON ESTADÍSTICAS
      * GET /api/customers/:id/sales
+     * Incluye métricas: total invertido, pagado, pendiente
      */
     getSalesByCustomer: asyncHandler(async (req, res) => {
         const { id } = req.params;

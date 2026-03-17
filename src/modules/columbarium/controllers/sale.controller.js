@@ -513,7 +513,6 @@ const saleController = {
             payments: linksByEntry[entry._id.toString()] || []
         }));
 
-        // Cargar reembolso si la venta está cancelada
         let refundData = null;
         if (saleObj.status === 'cancelled') {
             const refundDoc = await Refund.findOne({ sale: id })
@@ -597,8 +596,6 @@ const saleController = {
         const { id } = req.params;
         const { reason, refundAmount, refundMethod, refundNotes } = req.body;
 
-        //console.log('Datos recibidos:', { reason, refundAmount, refundMethod, refundNotes });
-
         // Validar motivo (OBLIGATORIO)
         if (!reason || typeof reason !== 'string' || reason.trim().length < 10) {
             return res.status(400).json({
@@ -676,8 +673,6 @@ const saleController = {
             );
             await sale.save({ session });
 
-            //console.log('Venta cancelada:', sale);
-
             // 4. Borrar beneficiarios del nicho
             await Beneficiary.deleteMany({ niche: niche._id }, { session });
 
@@ -691,8 +686,6 @@ const saleController = {
             niche.currentOwner = undefined;
             niche.notes = `Venta cancelada: ${sale.folio}. Razon: ${reason.trim()}`;
             await niche.save({ session });
-
-            //console.log('Nicho liberado:', niche);
 
             // 5. Registrar reembolso (solo si hay monto)
             let refund = null;
@@ -711,7 +704,6 @@ const saleController = {
                 });
 
                 await refund.save({ session });
-                //console.log('Reembolso registrado:', refund);
             }
 
             // 6. Crear log de auditoría
@@ -739,13 +731,9 @@ const saleController = {
                 userAgent: req.get('user-agent')
             }], { session });
 
-            //console.log('Log de auditoría creado');
-
             // 7. Commit
             await session.commitTransaction();
             session.endSession();
-
-            //console.log('Transacción completada exitosamente');
 
             // Serializar Decimal128 para el response
             const saleObj = sale.toObject();
@@ -780,7 +768,6 @@ const saleController = {
         } catch (error) {
             await session.abortTransaction();
             session.endSession();
-            //console.error('Error en cancelación:', error);
             throw error;
         }
     }),

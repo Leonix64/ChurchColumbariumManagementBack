@@ -1,19 +1,25 @@
 const mongoose = require('mongoose');
 
+/**
+ * AUDITORÍA
+ * Registro de todas las acciones realizadas en el sistema.
+ * Rastrea quién hizo qué, cuándo y en qué módulo.
+ * Los logs se auto-eliminan después de 1 año.
+ */
 const AuditSchema = new mongoose.Schema({
-    // QUIEN hizo la acción?
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
     },
+
     username: String,
+
     userRole: {
         type: String,
         enum: ['admin', 'seller', 'viewer']
     },
 
-    // QUE hizo?
     action: {
         type: String,
         required: true,
@@ -37,42 +43,37 @@ const AuditSchema = new mongoose.Schema({
         ]
     },
 
-    // EN QUE módulo?
     module: {
         type: String,
         enum: ['auth', 'customer', 'niche', 'sale', 'payment', 'succession', 'maintenance'],
         required: true
     },
 
-    // A QUE recurso afectó?
     resourceType: String,
     resourceId: mongoose.Schema.Types.ObjectId,
 
-    // DETALLES completos
     details: Object,
 
-    // CUANDO?
     timestamp: {
         type: Date,
         default: Date.now
     },
 
-    // INFO de la request
     ip: String,
     userAgent: String,
 
-    // Fue exitoso?
     status: {
         type: String,
         enum: ['success', 'error', 'warning'],
         default: 'success'
     },
+
     errorMessage: String
 }, {
-    timestamps: false
+    timestamps: { createdAt: true, updatedAt: true }
 });
 
-// Auto-eliminar logs despues de 1 año (opcional)
-AuditSchema.index({ timestamp: 1 }, { expireAfterSeconds: 31536000 });
+// TTL: auto-eliminar registros después de 1 año (365 días)
+AuditSchema.index({ createdAt: 1 }, { expireAfterSeconds: 31536000 });
 
 module.exports = mongoose.model('Audit', AuditSchema);
