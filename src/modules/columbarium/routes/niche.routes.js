@@ -17,7 +17,11 @@ router.get('/stats',
     nicheController.getNicheStats
 );
 
-// Buscar nichos con paginacion
+/**
+ * GET /api/niches/search
+ * Buscar nichos con paginación
+ * Query params: search, type, limit, page
+ */
 router.get('/search',
     nicheController.searchNiches
 );
@@ -41,7 +45,12 @@ router.get('/code/:code',
     nicheController.getNicheByCode
 );
 
-// Listar nichos deshabilitados (DEBE ir antes de /:id)
+/**
+ * GET /api/niches/disabled
+ * Listar nichos deshabilitados
+ * Roles: admin, seller
+ * NOTA: Debe ir antes de /:id para evitar conflicto de rutas
+ */
 router.get('/disabled',
     authMiddleware.checkRole('admin', 'seller'),
     nicheController.getDisabledNiches
@@ -79,9 +88,12 @@ router.patch('/:id',
     nicheController.updateNicheStatus
 );
 
-// Rutas de customización
-
-// Cambiar material (individual)
+/**
+ * PATCH /api/niches/:id/material
+ * Cambiar tipo de material del nicho
+ * Roles: solo admin
+ * Body: { type: 'wood' | 'marble' | 'special', price: number }
+ */
 router.patch('/:id/material',
     authMiddleware.checkRole('admin'),
     columbariumValidator.validateMongoId('id'),

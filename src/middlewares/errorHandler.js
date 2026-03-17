@@ -5,7 +5,10 @@
 
 const config = require('../config/env');
 
-// Clase personalizada para errores de API
+/**
+ * Error personalizado para APIs
+ * Extiende Error nativo con statusCode y detalles adicionales
+ */
 class ApiError extends Error {
     constructor(statusCode, message, details = null) {
         super(message);
@@ -16,7 +19,10 @@ class ApiError extends Error {
     }
 }
 
-// Errores comunes predefinidos
+/**
+ * Errores predefinidos por categoría
+ * Factories para crear ApiError con códigos HTTP estándar
+ */
 const errors = {
     // Autenticacion
     unauthorized: (message = 'No autorizado') =>
@@ -44,7 +50,11 @@ const errors = {
         new ApiError(500, message)
 };
 
-// Manejo de errores
+/**
+ * Middleware de manejo de errores
+ * Captura y formatea todos los errores de la aplicación
+ * Convierte errores de Mongoose/JWT a respuestas HTTP consistentes
+ */
 const errorHandler = (err, req, res, next) => {
     let { statusCode = 500, message } = err;
 
@@ -104,7 +114,6 @@ const errorHandler = (err, req, res, next) => {
         console.error('Error:', err);
     }
 
-    // Respuesta generica
     return res.status(statusCode).json({
         success: false,
         message,
@@ -113,7 +122,10 @@ const errorHandler = (err, req, res, next) => {
     });
 };
 
-// Rutas no encontradas
+/**
+ * Middleware para rutas no encontradas (404)
+ * Debe colocarse al final de todas las rutas
+ */
 const notFoundHandler = (req, res) => {
     res.status(404).json({
         success: false,
@@ -123,7 +135,11 @@ const notFoundHandler = (req, res) => {
     });
 };
 
-// Wrapper para async functions (Atrapa errores automáticamente)
+/**
+ * Wrapper para controladores asíncronos
+ * Captura errores automáticamente y los pasa a next()
+ * Uso: asyncHandler(async (req, res) => { ... })
+ */
 const asyncHandler = (fn) => {
     return (req, res, next) => {
         Promise.resolve(fn(req, res, next)).catch(next);

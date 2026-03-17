@@ -113,10 +113,8 @@ const beneficiaryController = {
         session.startTransaction();
 
         try {
-            // Eliminar los existentes
             await Beneficiary.deleteMany({ niche: nicheId }, { session });
 
-            // Preparar e insertar los nuevos
             const docs = beneficiaries.map((b, index) => ({
                 ...b,
                 niche: nicheId,

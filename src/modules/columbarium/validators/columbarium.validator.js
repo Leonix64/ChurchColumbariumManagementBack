@@ -1,6 +1,7 @@
 /**
  * VALIDADORES DE COLUMBARIUM
- * Valida datos de entrada antes de procesarlos
+ * Valida datos de entrada antes de procesarlos en los controllers.
+ * Incluye validaciones para: clientes, nichos, ventas y IDs de MongoDB.
  */
 
 const { errors } = require('../../../middlewares/errorHandler');
@@ -8,14 +9,11 @@ const mongoose = require('mongoose');
 
 const columbariumValidator = {
 
-    /**
-     * Validar creación de cliente
-     */
+    // Validar creación de cliente
     validateCreateCustomer: (req, res, next) => {
         const { firstName, lastName, phone, email, rfc } = req.body;
         const validationErrors = [];
 
-        // Nombre
         if (!firstName) {
             validationErrors.push({
                 field: 'firstName',
@@ -28,7 +26,6 @@ const columbariumValidator = {
             });
         }
 
-        // Apellido
         if (!lastName) {
             validationErrors.push({
                 field: 'lastName',
@@ -41,7 +38,6 @@ const columbariumValidator = {
             });
         }
 
-        // Telefono
         if (!phone) {
             validationErrors.push({
                 field: 'phone',
@@ -54,7 +50,6 @@ const columbariumValidator = {
             });
         }
 
-        // Email (opcional pero si viene debe ser válido)
         if (email && !/^\S+@\S+\.\S+$/.test(email)) {
             validationErrors.push({
                 field: 'email',
@@ -77,14 +72,11 @@ const columbariumValidator = {
         next();
     },
 
-    /**
-     * Validar actualizacion de estado de nicho
-     */
+    // Validar actualizacion de estado de nicho
     validateUpdateNicheStatus: (req, res, next) => {
         const { status } = req.body;
         const validationErrors = [];
 
-        // Status
         if (status && !['available', 'reserved', 'sold'].includes(status)) {
             validationErrors.push({
                 field: 'status',
@@ -99,14 +91,11 @@ const columbariumValidator = {
         next();
     },
 
-    /**
-     * Validar creacion de venta
-     */
+    // Validar creacion de venta
     validateCreateSale: (req, res, next) => {
         const { nicheId, customerId, totalAmount, downPayment } = req.body;
         const validationErrors = [];
 
-        // Nicho ID
         if (!nicheId) {
             validationErrors.push({
                 field: 'nicheId',
@@ -119,7 +108,6 @@ const columbariumValidator = {
             });
         }
 
-        // Cliente ID
         if (!customerId) {
             validationErrors.push({
                 field: 'customerId',
@@ -132,7 +120,6 @@ const columbariumValidator = {
             });
         }
 
-        // Total Amount
         if (!totalAmount) {
             validationErrors.push({
                 field: 'totalAmount',
@@ -145,7 +132,6 @@ const columbariumValidator = {
             });
         }
 
-        // Down Payment
         if (!downPayment) {
             validationErrors.push({
                 field: 'downPayment',
@@ -170,9 +156,7 @@ const columbariumValidator = {
         next();
     },
 
-    /**
-     * Validar ID de MongoDB
-     */
+    // Validar ID de MongoDB
     validateMongoId: (paramName = 'id') => {
         return (req, res, next) => {
             const id = req.params[paramName];

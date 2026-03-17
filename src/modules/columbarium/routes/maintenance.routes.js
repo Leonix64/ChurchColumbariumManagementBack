@@ -28,8 +28,8 @@ router.get('/niche/:id',
 
 /**
  * GET /api/maintenance/customer/:id/history
- * Obtener historial de mantenimientos que pagó un cliente
- * (aunque los nichos ya no sean suyos)
+ * Obtener historial de mantenimientos pagados por un cliente
+ * Incluye pagos de nichos que ya no posee
  */
 router.get('/customer/:id/history',
     columbariumValidator.validateMongoId('id'),

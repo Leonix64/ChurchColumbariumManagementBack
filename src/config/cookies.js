@@ -1,6 +1,10 @@
 const config = require('./env');
 
-// Obtiene opciones de cookies segun el entorno
+/**
+ * Genera opciones de cookies según el entorno
+ * En producción: requiere HTTPS (secure: true)
+ * En desarrollo: permite HTTP (secure: false)
+ */
 const getCookieOptions = (maxAge) => {
     const baseOptions = {
         httpOnly: true,
@@ -25,7 +29,12 @@ const getCookieOptions = (maxAge) => {
     };
 };
 
-// Opciones predefinidas para diferentes tipos de cookies
+/**
+ * Opciones predefinidas para diferentes tipos de cookies
+ * - refreshToken: 7 días
+ * - accessToken: 15 minutos
+ * - session: 24 horas
+ */
 const cookieOptions = {
     // Refresh Token (7 dias)
     refreshToken: getCookieOptions(7 * 24 * 60 * 60 * 1000),
@@ -37,7 +46,13 @@ const cookieOptions = {
     session: getCookieOptions(24 * 60 * 60 * 1000),
 };
 
-// Configura cookies de manera segura
+/**
+ * Establece una cookie de manera segura
+ * @param {Object} res - Response de Express
+ * @param {string} name - Nombre de la cookie
+ * @param {string} value - Valor de la cookie
+ * @param {string} type - Tipo: 'refreshToken' | 'accessToken' | 'session'
+ */
 const setSecureCookie = (res, name, value, type = 'refreshToken') => {
     const options = cookieOptions[type];
 
@@ -47,7 +62,10 @@ const setSecureCookie = (res, name, value, type = 'refreshToken') => {
     res.cookie(name, value, options);
 };
 
-// Limpia una cookie de manera segura
+/**
+ * Elimina una cookie de manera segura
+ * Usa las mismas opciones que al crearla para asegurar eliminación correcta
+ */
 const clearSecureCookie = (res, name) => {
     res.clearCookie(name, {
         httpOnly: true,
@@ -57,7 +75,10 @@ const clearSecureCookie = (res, name) => {
     });
 };
 
-// limpia todas las cookies de autenticacion
+/**
+ * Elimina todas las cookies de autenticación
+ * Útil para logout completo
+ */
 const clearAuthCookies = (res) => {
     clearSecureCookie(res, 'refreshToken');
     clearSecureCookie(res, 'accessToken');

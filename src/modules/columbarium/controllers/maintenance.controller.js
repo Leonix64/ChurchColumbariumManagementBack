@@ -5,6 +5,7 @@ const Audit = require('../../audit/models/audit.model');
 const { asyncHandler, errors } = require('../../../middlewares/errorHandler');
 
 const maintenanceController = {
+
     /**
      * REGISTRAR PAGO DE MANTENIMIENTO
      * POST /api/niches/:id/maintenance
@@ -13,7 +14,6 @@ const maintenanceController = {
         const { id } = req.params;
         const { year, amount, method, notes } = req.body;
 
-        // Validaciones básicas
         if (!year || !amount || !method) {
             throw errors.badRequest('Año, monto y método de pago son requeridos');
         }
@@ -22,13 +22,11 @@ const maintenanceController = {
             throw errors.badRequest('El monto debe ser mayor a 0');
         }
 
-        // Validar que el año sea válido
         const currentYear = new Date().getFullYear();
         if (year > currentYear + 1) {
             throw errors.badRequest(`El año no puede ser mayor a ${currentYear + 1}`);
         }
 
-        // Buscar nicho
         const niche = await Niche.findById(id).populate('currentOwner', 'firstName lastName phone email');
 
         if (!niche) {
@@ -47,7 +45,7 @@ const maintenanceController = {
 
         const owner = niche.currentOwner;
 
-        // Verificar si ya existe un pago de mantenimiento para este nicho en este año
+        // Validar unicidad: un pago por nicho por año
         const existingPayment = await Payment.findOne({
             niche: id,
             concept: 'maintenance',
@@ -58,7 +56,6 @@ const maintenanceController = {
             throw errors.conflict(`Ya existe un pago de mantenimiento registrado para este nicho en el año ${year}`);
         }
 
-        // Crear pago de mantenimiento
         const maintenancePayment = await Payment.create({
             niche: id,
             customer: owner._id, // Propietario ACTUAL al momento del pago
@@ -75,7 +72,6 @@ const maintenanceController = {
             balanceAfter: 0
         });
 
-        // Registrar auditoría
         await Audit.create({
             user: req.user?.id,
             username: req.user?.username,
@@ -133,7 +129,6 @@ const maintenanceController = {
             throw errors.notFound('Nicho');
         }
 
-        // Buscar todos los pagos de mantenimiento del nicho
         const maintenancePayments = await Payment.find({
             niche: id,
             concept: 'maintenance'
@@ -157,7 +152,7 @@ const maintenanceController = {
     /**
      * OBTENER HISTORIAL DE MANTENIMIENTO POR CLIENTE
      * GET /api/customers/:id/maintenance-history
-     * (Útil para ver qué mantenimientos pagó un cliente, aunque el nicho ya no sea suyo)
+     * Muestra todos los pagos realizados, incluso de nichos que ya no posee
      */
     getCustomerMaintenanceHistory: asyncHandler(async (req, res) => {
         const { id } = req.params;
@@ -167,7 +162,6 @@ const maintenanceController = {
             throw errors.notFound('Cliente');
         }
 
-        // Buscar pagos de mantenimiento donde este cliente fue el que pagó
         const maintenancePayments = await Payment.find({
             customer: id,
             concept: 'maintenance'

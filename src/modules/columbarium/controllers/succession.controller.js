@@ -8,6 +8,7 @@ const Audit = require('../../audit/models/audit.model');
 const { asyncHandler, errors } = require('../../../middlewares/errorHandler');
 
 const successionController = {
+
     /**
      * REGISTRAR FALLECIMIENTO Y SUCESIÓN
      * POST /api/succession/register
@@ -52,7 +53,7 @@ const successionController = {
 
             let newOwner = await Customer.findOne({
                 firstName: { $regex: new RegExp(`^${firstName}$`, 'i') },
-                lastName:  { $regex: new RegExp(`^${lastName}$`, 'i') },
+                lastName: { $regex: new RegExp(`^${lastName}$`, 'i') },
                 phone: nextBeneficiary.phone || ''
             }).session(session);
 
@@ -200,7 +201,7 @@ const successionController = {
     /**
      * OBTENER HISTORIAL DE TITULARIDAD DE UN NICHO
      * GET /api/succession/niche/:nicheId/history
-     * Devuelve el array embebido ownershipHistory con owners populados
+     * Devuelve ownershipHistory con propietarios y usuarios registradores populados
      */
     getNicheSuccessionHistory: asyncHandler(async (req, res) => {
         const { nicheId } = req.params;
@@ -285,7 +286,6 @@ const successionController = {
 
             const previousOwner = niche.currentOwner;
 
-            // Transferir titularidad
             await niche.transferOwnership(
                 newOwnerId,
                 reason || 'transfer',
@@ -294,14 +294,12 @@ const successionController = {
                 { session }
             );
 
-            // Actualizar venta si existe
             const sale = await Sale.findOne({ niche: nicheId }).session(session);
             if (sale) {
                 sale.customer = newOwnerId;
                 sale.notes = (sale.notes || '') + `\nTransferencia: ${new Date().toLocaleDateString()}`;
                 await sale.save({ session });
 
-                // Registrar sucesión
                 await Succession.create([{
                     niche: nicheId,
                     sale: sale._id,
@@ -315,7 +313,6 @@ const successionController = {
                 }], { session });
             }
 
-            // Auditoría
             await Audit.create([{
                 user: req.user?.id,
                 username: req.user?.username,
