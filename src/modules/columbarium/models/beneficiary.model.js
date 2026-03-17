@@ -4,7 +4,8 @@ const { toNumber } = require('../../../utils/decimal');
 /**
  * BENEFICIARIO
  * Persona designada para heredar el nicho si el titular fallece.
- * Coleccion independiente referenciada al nicho.
+ * Se registra por orden de prioridad (1, 2, 3...).
+ * Permite múltiples beneficiarios por nicho.
  */
 
 const BeneficiarySchema = new mongoose.Schema({
