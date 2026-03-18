@@ -1,6 +1,6 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const Customer = require('../modules/columbarium/models/customer.model');
+const Customer = require('./src/modules/columbarium/models/customer.model');
 
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('[INFO] Conectado para crear clientes...'))

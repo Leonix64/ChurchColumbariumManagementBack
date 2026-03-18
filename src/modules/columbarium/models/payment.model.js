@@ -6,7 +6,6 @@ const { toNumber } = require('../../../utils/decimal');
  * Registro de cada pago realizado: enganche, mensualidad o mantenimiento.
  * Los pagos de venta se vinculan a cuotas mediante PaymentScheduleLink.
  */
-
 const PaymentSchema = new mongoose.Schema({
     // Relaciones
     sale: {

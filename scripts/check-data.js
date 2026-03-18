@@ -1,8 +1,8 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const Customer = require('../modules/columbarium/models/customer.model');
-const Niche = require('../modules/columbarium/models/niche.model');
-const Sale = require('../modules/columbarium/models/sale.model');
+const Customer = require('./src/modules/columbarium/models/customer.model');
+const Niche = require('./src/modules/columbarium/models/niche.model');
+const Sale = require('./src/modules/columbarium/models/sale.model');
 
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('[INFO] Connected to database for verification...'))

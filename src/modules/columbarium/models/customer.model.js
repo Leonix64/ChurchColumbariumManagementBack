@@ -5,7 +5,6 @@ const mongoose = require('mongoose');
  * Persona que compra o reserva un nicho.
  * Puede ser propietario actual o heredero.
  */
-
 const CustomerSchema = new mongoose.Schema({
     firstName: {
         type: String,

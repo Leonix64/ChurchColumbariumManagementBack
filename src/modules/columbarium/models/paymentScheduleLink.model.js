@@ -6,7 +6,6 @@ const { toNumber } = require('../../../utils/decimal');
  * Tabla pivot N:M entre Payment y AmortSchedule.
  * Registra cuánto de cada pago se aplicó a cada cuota.
  */
-
 const PaymentScheduleLinkSchema = new mongoose.Schema({
     payment: {
         type: mongoose.Schema.Types.ObjectId,

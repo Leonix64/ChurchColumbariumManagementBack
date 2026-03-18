@@ -1,9 +1,9 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const Customer = require('../modules/columbarium/models/customer.model');
-const Niche = require('../modules/columbarium/models/niche.model');
-const Sale = require('../modules/columbarium/models/sale.model');
-const Payment = require('../modules/columbarium/models/payment.model');
+const Customer = require('./src/modules/columbarium/models/customer.model');
+const Niche = require('./src/modules/columbarium/models/niche.model');
+const Sale = require('./src/modules/columbarium/models/sale.model');
+const Payment = require('./src/modules/columbarium/models/payment.model');
 
 /**
  * SEED MEJORADO PARA PRUEBAS DE VENTA

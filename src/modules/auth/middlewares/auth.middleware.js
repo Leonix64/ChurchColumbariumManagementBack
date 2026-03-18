@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/user.model');
 const config = require('../../../config/env');
+const logger = require('../../../utils/logger');
+const { ROLES } = require('../../../config/constants');
 
 const authMiddleware = {
 
@@ -81,7 +83,7 @@ const authMiddleware = {
             next();
 
         } catch (error) {
-            console.error('Error en verifyToken:', error);
+            logger.error('Error en verifyToken:', error);
             return res.status(500).json({
                 success: false,
                 message: 'Error en autenticacion'
@@ -127,7 +129,7 @@ const authMiddleware = {
         const { id } = req.params; // ID del recurso a modificar
 
         // Si es admin, permitir siempre
-        if (req.user.role === 'admin') {
+        if (req.user.role === ROLES.ADMIN) {
             return next();
         }
 

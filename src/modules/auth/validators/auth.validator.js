@@ -2,7 +2,6 @@
  * VALIDADORES DE AUTENTICACION
  * Valida datos de entrada antes de procesarlos
  */
-
 const { errors } = require('../../../middlewares/errorHandler');
 
 const authValidator = {

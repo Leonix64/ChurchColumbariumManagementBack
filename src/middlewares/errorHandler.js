@@ -2,7 +2,6 @@
  * MANEJO DE ERRORES CENTRALIZADO
  * Captura todos los errores y los formatea
  */
-
 const config = require('../config/env');
 
 /**

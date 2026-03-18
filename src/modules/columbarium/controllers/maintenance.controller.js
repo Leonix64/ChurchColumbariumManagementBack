@@ -3,6 +3,8 @@ const Customer = require('../models/customer.model');
 const Payment = require('../models/payment.model');
 const Audit = require('../../audit/models/audit.model');
 const { asyncHandler, errors } = require('../../../middlewares/errorHandler');
+const { nowUTC } = require('../../../utils/dateHelpers');
+const { buildUserContext } = require('../../../utils/requestHelpers');
 
 const maintenanceController = {
 
@@ -22,7 +24,7 @@ const maintenanceController = {
             throw errors.badRequest('El monto debe ser mayor a 0');
         }
 
-        const currentYear = new Date().getFullYear();
+        const currentYear = nowUTC().getUTCFullYear();
         if (year > currentYear + 1) {
             throw errors.badRequest(`El año no puede ser mayor a ${currentYear + 1}`);
         }
@@ -45,37 +47,46 @@ const maintenanceController = {
 
         const owner = niche.currentOwner;
 
-        // Validar unicidad: un pago por nicho por año
-        const existingPayment = await Payment.findOne({
-            niche: id,
-            concept: 'maintenance',
-            maintenanceYear: year
-        });
+        // Operación atómica: inserta solo si no existe (evita race condition)
+        const receiptNumber = `MANT-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
 
-        if (existingPayment) {
+        const upsertResult = await Payment.updateOne(
+            {
+                niche: id,
+                concept: 'maintenance',
+                maintenanceYear: year
+            },
+            {
+                $setOnInsert: {
+                    niche: id,
+                    customer: owner._id, // Propietario ACTUAL al momento del pago
+                    sale: null,
+                    registeredBy: req.user?.id,
+                    receiptNumber,
+                    amount,
+                    concept: 'maintenance',
+                    method,
+                    maintenanceYear: year,
+                    paymentDate: nowUTC(),
+                    notes: notes || `Mantenimiento anual - Nicho ${niche.code}`,
+                    balanceBefore: 0,
+                    balanceAfter: 0
+                }
+            },
+            { upsert: true }
+        );
+
+        if (upsertResult.upsertedCount === 0) {
             throw errors.conflict(`Ya existe un pago de mantenimiento registrado para este nicho en el año ${year}`);
         }
 
-        const maintenancePayment = await Payment.create({
-            niche: id,
-            customer: owner._id, // Propietario ACTUAL al momento del pago
-            sale: null,
-            registeredBy: req.user?.id,
-            receiptNumber: `MANT-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-            amount,
-            concept: 'maintenance',
-            method,
-            maintenanceYear: year,
-            paymentDate: new Date(),
-            notes: notes || `Mantenimiento anual - Nicho ${niche.code}`,
-            balanceBefore: 0,
-            balanceAfter: 0
-        });
+        const maintenancePayment = await Payment.findById(upsertResult.upsertedId);
 
+        const userCtx = buildUserContext(req);
         await Audit.create({
-            user: req.user?.id,
-            username: req.user?.username,
-            userRole: req.user?.role,
+            user: userCtx.id,
+            username: userCtx.username,
+            userRole: userCtx.role,
             action: 'register_maintenance',
             module: 'payment',
             resourceType: 'Payment',
@@ -93,8 +104,8 @@ const maintenanceController = {
                 concept: 'maintenance'
             },
             status: 'success',
-            ip: req.ip,
-            userAgent: req.get('user-agent')
+            ip: userCtx.ip,
+            userAgent: userCtx.userAgent
         });
 
         res.status(201).json({

@@ -1,8 +1,8 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-require('../modules/columbarium/models/index.model');
-const Beneficiary = require('../modules/columbarium/models/beneficiary.model');
-const Niche = require('../modules/columbarium/models/niche.model');
+require('./src/modules/columbarium/models/index.model');
+const Beneficiary = require('./src/modules/columbarium/models/beneficiary.model');
+const Niche = require('./src/modules/columbarium/models/niche.model');
 
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('[INFO] Conectado para crear beneficiarios...'))

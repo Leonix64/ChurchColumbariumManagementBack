@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { ROLES, AUDIT_STATUS } = require('../../../config/constants');
 
 /**
  * AUDITORÍA
@@ -17,7 +18,7 @@ const AuditSchema = new mongoose.Schema({
 
     userRole: {
         type: String,
-        enum: ['admin', 'seller', 'viewer']
+        enum: ROLES.ALL
     },
 
     action: {
@@ -64,8 +65,8 @@ const AuditSchema = new mongoose.Schema({
 
     status: {
         type: String,
-        enum: ['success', 'error', 'warning'],
-        default: 'success'
+        enum: AUDIT_STATUS.ALL,
+        default: AUDIT_STATUS.SUCCESS
     },
 
     errorMessage: String

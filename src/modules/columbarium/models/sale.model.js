@@ -7,7 +7,6 @@ const { toNumber, toDecimal } = require('../../../utils/decimal');
  * Contiene montos totales, balance y estado del contrato.
  * Las cuotas están en AmortSchedule (colección separada).
  */
-
 const SaleSchema = new mongoose.Schema({
     niche: { type: mongoose.Schema.Types.ObjectId, ref: 'Niche', required: true },
 
