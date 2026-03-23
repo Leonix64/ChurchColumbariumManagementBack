@@ -3,6 +3,7 @@ const router = express.Router();
 const saleController = require('../controllers/sale.controller');
 const authMiddleware = require('../../auth/middlewares/auth.middleware');
 const columbariumValidator = require('../validators/columbarium.validator');
+const { ROLES } = require('../../../config/constants');
 
 // Aplicar autenticacion a todas las rutas
 router.use(authMiddleware.verifyToken);
@@ -13,7 +14,7 @@ router.use(authMiddleware.verifyToken);
  * Roles: admin, seller
  */
 router.get('/stats',
-    authMiddleware.checkRole('admin', 'seller'),
+    authMiddleware.checkRole(ROLES.ADMIN, ROLES.SELLER),
     saleController.getSalesStats
 );
 
@@ -24,7 +25,7 @@ router.get('/stats',
  * Body: { reason, refundAmount, refundMethod, refundNotes }
  */
 router.post('/:id/cancel',
-    authMiddleware.checkRole('admin', 'seller'),
+    authMiddleware.checkRole(ROLES.ADMIN, ROLES.SELLER),
     columbariumValidator.validateMongoId('id'),
     saleController.cancelSale
 );
@@ -35,7 +36,7 @@ router.post('/:id/cancel',
  * Roles: admin, seller
  */
 router.post('/',
-    authMiddleware.checkRole('admin', 'seller'),
+    authMiddleware.checkRole(ROLES.ADMIN, ROLES.SELLER),
     columbariumValidator.validateCreateSale,
     saleController.createSale
 );
@@ -47,7 +48,7 @@ router.post('/',
  * Roles: admin, seller
  */
 router.get('/',
-    authMiddleware.checkRole('admin', 'seller'),
+    authMiddleware.checkRole(ROLES.ADMIN, ROLES.SELLER),
     saleController.getAllSales
 );
 
@@ -57,7 +58,7 @@ router.get('/',
  * Roles: admin, seller
  */
 router.get('/:id',
-    authMiddleware.checkRole('admin', 'seller'),
+    authMiddleware.checkRole(ROLES.ADMIN, ROLES.SELLER),
     columbariumValidator.validateMongoId('id'),
     saleController.getSaleById
 );
@@ -69,7 +70,7 @@ router.get('/:id',
  * Roles: admin, seller
  */
 router.post('/:id/payment',
-    authMiddleware.checkRole('admin', 'seller'),
+    authMiddleware.checkRole(ROLES.ADMIN, ROLES.SELLER),
     columbariumValidator.validateMongoId('id'),
     saleController.registerPayment
 );

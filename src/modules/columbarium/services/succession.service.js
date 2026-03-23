@@ -6,6 +6,8 @@ const Succession = require('../models/succession.model');
 const Beneficiary = require('../models/beneficiary.model');
 const Audit = require('../../audit/models/audit.model');
 const { errors } = require('../../../middlewares/errorHandler');
+const { nowUTC } = require('../../../utils/dateHelpers');
+const { AUDIT_STATUS } = require('../../../config/constants');
 
 /**
  * Registra una sucesión por fallecimiento del titular.
@@ -58,7 +60,7 @@ async function registerSuccession({ nicheId, deceasedDate, notes, deceasedId, re
                 email: nextBeneficiary.email || undefined,
                 active: true,
                 createdBySuccession: true,
-                successionDate: new Date()
+                successionDate: nowUTC()
             });
             newOwner = await newCustomerDoc.save({ session });
         }
@@ -111,7 +113,7 @@ async function registerSuccession({ nicheId, deceasedDate, notes, deceasedId, re
             registeredBy: userCtx.id,
             type: 'death',
             reason: reason || 'Fallecimiento del titular',
-            transferDate: new Date(),
+            transferDate: nowUTC(),
             notes: notes || undefined
         }], { session });
 
@@ -139,7 +141,7 @@ async function registerSuccession({ nicheId, deceasedDate, notes, deceasedId, re
                 deceasedDate: deceasedDate || new Date(),
                 nicheCode: niche.code
             },
-            status: 'success',
+            status: AUDIT_STATUS.SUCCESS,
             ip: userCtx.ip,
             userAgent: userCtx.userAgent
         }], { session });
@@ -188,7 +190,7 @@ async function manualTransfer({ nicheId, newOwnerId, reason, notes }, userCtx) {
         const sale = await Sale.findOne({ niche: nicheId }).session(session);
         if (sale) {
             sale.customer = newOwnerId;
-            sale.notes = (sale.notes || '') + `\nTransferencia: ${new Date().toLocaleDateString()}`;
+            sale.notes = (sale.notes || '') + `\nTransferencia: ${nowUTC().toISOString().split('T')[0]}`;
             await sale.save({ session });
 
             await Succession.create([{
@@ -199,7 +201,7 @@ async function manualTransfer({ nicheId, newOwnerId, reason, notes }, userCtx) {
                 registeredBy: userCtx.id,
                 type: 'manual',
                 reason: reason || 'Transferencia manual',
-                transferDate: new Date(),
+                transferDate: nowUTC(),
                 notes: notes || undefined
             }], { session });
         }
@@ -218,7 +220,7 @@ async function manualTransfer({ nicheId, newOwnerId, reason, notes }, userCtx) {
                 reason: reason || 'transfer',
                 nicheCode: niche.code
             },
-            status: 'success',
+            status: AUDIT_STATUS.SUCCESS,
             ip: userCtx.ip,
             userAgent: userCtx.userAgent
         }], { session });

@@ -2,6 +2,7 @@ const Customer = require('../models/customer.model');
 const Sale = require('../models/sale.model');
 const Audit = require('../../audit/models/audit.model');
 const { asyncHandler, errors } = require('../../../middlewares/errorHandler');
+const { AUDIT_STATUS, PAGINATION } = require('../../../config/constants');
 
 const customerController = {
 
@@ -42,7 +43,7 @@ const customerController = {
                 customerId: newCustomer._id,
                 customerName: `${newCustomer.firstName} ${newCustomer.lastName}`
             },
-            status: 'success',
+            status: AUDIT_STATUS.SUCCESS,
             ip: req.ip,
             userAgent: req.get('user-agent')
         });
@@ -74,7 +75,8 @@ const customerController = {
 
         const customers = await Customer.find(query)
             .select(search ? { score: { $meta: 'textScore' } } : {})
-            .sort(search ? { score: { $meta: 'textScore' } } : { createdAt: -1 });
+            .sort(search ? { score: { $meta: 'textScore' } } : { createdAt: -1 })
+            .limit(PAGINATION.GENERAL_MAX_LIMIT);
 
         res.status(200).json({
             success: true,

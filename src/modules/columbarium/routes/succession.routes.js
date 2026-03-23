@@ -3,6 +3,7 @@ const router = express.Router();
 const successionController = require('../controllers/succession.controller');
 const authMiddleware = require('../../auth/middlewares/auth.middleware');
 const columbariumValidator = require('../validators/columbarium.validator');
+const { ROLES } = require('../../../config/constants');
 
 // Aplicar autenticación
 router.use(authMiddleware.verifyToken);
@@ -13,7 +14,7 @@ router.use(authMiddleware.verifyToken);
  * Roles: admin, seller
  */
 router.post('/register',
-    authMiddleware.checkRole('admin', 'seller'),
+    authMiddleware.checkRole(ROLES.ADMIN, ROLES.SELLER),
     successionController.registerSuccession
 );
 
@@ -23,7 +24,7 @@ router.post('/register',
  * Roles: admin, seller
  */
 router.get('/niche/:nicheId/history',
-    authMiddleware.checkRole('admin', 'seller'),
+    authMiddleware.checkRole(ROLES.ADMIN, ROLES.SELLER),
     successionController.getNicheSuccessionHistory
 );
 
@@ -33,7 +34,7 @@ router.get('/niche/:nicheId/history',
  * Roles: admin, seller
  */
 router.get('/customer/:customerId/history',
-    authMiddleware.checkRole('admin', 'seller'),
+    authMiddleware.checkRole(ROLES.ADMIN, ROLES.SELLER),
     successionController.getCustomerSuccessionHistory
 );
 
@@ -43,7 +44,7 @@ router.get('/customer/:customerId/history',
  * Roles: solo admin
  */
 router.post('/transfer',
-    authMiddleware.checkRole('admin'),
+    authMiddleware.checkRole(ROLES.ADMIN),
     successionController.manualTransfer
 );
 

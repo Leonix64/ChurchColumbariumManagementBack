@@ -1,6 +1,8 @@
 const Niche = require('../models/niche.model');
 const Audit = require('../../audit/models/audit.model');
 const { asyncHandler, errors } = require('../../../middlewares/errorHandler');
+const { nowUTC } = require('../../../utils/dateHelpers');
+const { AUDIT_STATUS, NICHE_TYPES } = require('../../../config/constants');
 
 const nicheController = {
 
@@ -197,8 +199,8 @@ const nicheController = {
         const { id } = req.params;
         const { type, price } = req.body;
 
-        if (!type || !['wood', 'marble', 'special'].includes(type)) {
-            throw errors.badRequest('Tipo debe ser: wood, marble o special');
+        if (!type || !NICHE_TYPES.includes(type)) {
+            throw errors.badRequest(`Tipo debe ser: ${NICHE_TYPES.join(', ')}`);
         }
 
         if (!price || price <= 0) {
@@ -322,7 +324,7 @@ const nicheController = {
 
         niche.status = 'disabled';
         niche.disabledReason = reason.trim();
-        niche.disabledAt = new Date();
+        niche.disabledAt = nowUTC();
         niche.disabledBy = req.user.id;
         await niche.save();
 
@@ -409,8 +411,8 @@ const nicheController = {
         if (!displayNumber || displayNumber < 1) {
             throw errors.badRequest('El número visible debe ser mayor a 0');
         }
-        if (!['wood', 'marble', 'special'].includes(type)) {
-            throw errors.badRequest('El material debe ser: wood, marble o special');
+        if (!NICHE_TYPES.includes(type)) {
+            throw errors.badRequest(`El material debe ser: ${NICHE_TYPES.join(', ')}`);
         }
         if (price === undefined || price === null || price < 0) {
             throw errors.badRequest('El precio es requerido');

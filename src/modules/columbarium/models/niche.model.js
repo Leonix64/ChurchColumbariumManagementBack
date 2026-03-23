@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const { toNumber } = require('../../../utils/decimal');
+const { nowUTC } = require('../../../utils/dateHelpers');
 
 const OwnershipHistorySchema = new mongoose.Schema({
     owner: {
@@ -199,14 +200,14 @@ NicheSchema.methods.transferOwnership = async function (newOwnerId, reason, note
             h => h.owner.toString() === this.currentOwner.toString() && !h.endDate
         );
         if (currentEntry) {
-            currentEntry.endDate = new Date();
+            currentEntry.endDate = nowUTC();
         }
     }
 
     // Agregar nuevo registro al historial
     this.ownershipHistory.push({
         owner: newOwnerId,
-        startDate: new Date(),
+        startDate: nowUTC(),
         reason: reason || 'transfer',
         notes: notes || '',
         registeredBy: registeredBy || undefined

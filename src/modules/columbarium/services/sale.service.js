@@ -10,7 +10,7 @@ const AmortSchedule = require('../models/amortSchedule.model');
 const { errors } = require('../../../middlewares/errorHandler');
 const { toDecimal, toNumber } = require('../../../utils/decimal');
 const { buildSchedule } = require('./amortization.service');
-const { AMORTIZATION } = require('../../../config/constants');
+const { AMORTIZATION, AUDIT_STATUS } = require('../../../config/constants');
 const { nowUTC } = require('../../../utils/dateHelpers');
 
 /**
@@ -112,7 +112,7 @@ async function createSale({ nicheId, customerId, totalAmount, downPayment }, use
             resourceType: 'Sale',
             resourceId: newSale._id,
             details: { saleId: newSale._id, folio: newSale.folio, customerId, nicheId, totalAmount, downPayment },
-            status: 'success',
+            status: AUDIT_STATUS.SUCCESS,
             ip: userCtx.ip,
             userAgent: userCtx.userAgent
         }], { session });
@@ -237,7 +237,7 @@ async function cancelSale(saleId, { reason, refundAmount, refundMethod, refundNo
                 previousStatus: 'active',
                 newStatus: 'cancelled'
             },
-            status: 'success',
+            status: AUDIT_STATUS.SUCCESS,
             ip: userCtx.ip,
             userAgent: userCtx.userAgent
         }], { session });

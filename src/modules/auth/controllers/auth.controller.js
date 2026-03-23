@@ -4,6 +4,8 @@ const jwt = require('jsonwebtoken');
 const config = require('../../../config/env');
 const { errors, asyncHandler } = require('../../../middlewares/errorHandler');
 const { setSecureCookie, clearAuthCookies } = require('../../../config/cookies');
+const { nowUTC } = require('../../../utils/dateHelpers');
+const { ROLES } = require('../../../config/constants');
 
 const authController = {
 
@@ -32,7 +34,7 @@ const authController = {
             password,
             fullName,
             phone: phone || '',
-            role: role || 'seller',
+            role: role || ROLES.SELLER,
             isActive: true,
             tokenVersion: 0
         });
@@ -131,7 +133,7 @@ const authController = {
         await user.resetLoginAttempts();
 
         // Actualizar ultimo login
-        user.lastLogin = new Date();
+        user.lastLogin = nowUTC();
 
         // Generar tokens
         const accessToken = user.generateAccessToken();
@@ -384,7 +386,7 @@ const authController = {
         const requestingUser = req.user; // Del middleware de auth
 
         // Solo admin puede invalidar tokens de otros usuarios
-        if (userId && userId !== requestingUser.id && requestingUser.role !== 'admin') {
+        if (userId && userId !== requestingUser.id && requestingUser.role !== ROLES.ADMIN) {
             throw errors.forbidden('No tienes permiso para invalidar tokens de otros usuarios');
         }
 
