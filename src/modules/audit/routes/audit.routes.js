@@ -2,13 +2,14 @@ const express = require('express');
 const router = express.Router();
 const auditController = require('../controllers/audit.controller');
 const authMiddleware = require('../../auth/middlewares/auth.middleware');
+const { ROLES } = require('../../../config/constants');
 
 /**
  * AUDITORÍA - SOLO ADMINISTRADORES
  * Todas las rutas requieren autenticación y rol de admin
  */
 router.use(authMiddleware.verifyToken);
-router.use(authMiddleware.checkRole('admin'));
+router.use(authMiddleware.checkRole(ROLES.ADMIN));
 
 /**
  * GET /api/audit

@@ -3,6 +3,7 @@ const router = express.Router();
 const maintenanceController = require('../controllers/maintenance.controller');
 const authMiddleware = require('../../auth/middlewares/auth.middleware');
 const columbariumValidator = require('../validators/columbarium.validator');
+const { ROLES } = require('../../../config/constants');
 
 // Aplicar autenticación a todas las rutas
 router.use(authMiddleware.verifyToken);
@@ -12,7 +13,7 @@ router.use(authMiddleware.verifyToken);
  * Registrar pago de mantenimiento para un NICHO
  */
 router.post('/niche/:id',
-    authMiddleware.checkRole('admin', 'seller'),
+    authMiddleware.checkRole(ROLES.ADMIN, ROLES.SELLER),
     columbariumValidator.validateMongoId('id'),
     maintenanceController.registerMaintenance
 );

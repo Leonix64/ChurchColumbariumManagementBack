@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const Beneficiary = require('../models/beneficiary.model');
 const Audit = require('../../audit/models/audit.model');
 const { asyncHandler, errors } = require('../../../middlewares/errorHandler');
+const { nowUTC } = require('../../../utils/dateHelpers');
+const { AUDIT_STATUS } = require('../../../config/constants');
 
 const beneficiaryController = {
 
@@ -56,7 +58,7 @@ const beneficiaryController = {
                 relationship: beneficiary.relationship,
                 order: beneficiary.order
             },
-            status: 'success',
+            status: AUDIT_STATUS.SUCCESS,
             ip: req.ip,
             userAgent: req.get('user-agent')
         });
@@ -135,7 +137,7 @@ const beneficiaryController = {
                     nicheId,
                     count: created.length
                 },
-                status: 'success',
+                status: AUDIT_STATUS.SUCCESS,
                 ip: req.ip,
                 userAgent: req.get('user-agent')
             }], { session });
@@ -176,7 +178,7 @@ const beneficiaryController = {
         }
 
         beneficiary.isDeceased = true;
-        beneficiary.deceasedDate = deceasedDate || new Date();
+        beneficiary.deceasedDate = deceasedDate || nowUTC();
         if (notes) {
             beneficiary.notes = notes;
         }
@@ -197,7 +199,7 @@ const beneficiaryController = {
                 deceasedDate: beneficiary.deceasedDate,
                 notes: beneficiary.notes || undefined
             },
-            status: 'success',
+            status: AUDIT_STATUS.SUCCESS,
             ip: req.ip,
             userAgent: req.get('user-agent')
         });

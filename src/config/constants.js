@@ -28,6 +28,7 @@ module.exports = {
         AUDIT_DEFAULT_LIMIT: 50,     // Default para getUserHistory
         AUDIT_RECENT_DEFAULT: 20,    // Default para getRecentActivity
         DEFAULT_PAGE_SIZE: 10,       // Tamaño de página genérico
+        GENERAL_MAX_LIMIT: 500,      // Límite máximo para listados generales (previene DoS)
     },
 
     // Audit logs
@@ -43,6 +44,9 @@ module.exports = {
         PAYMENT: ['completed', 'cancelled', 'refunded'],
         AMORT_ENTRY: ['pending', 'partial', 'paid', 'paid_late', 'overdue'],
     },
+
+    // Tipos de material de nicho
+    NICHE_TYPES: ['wood', 'marble', 'special'],
 
     // Roles de usuario del sistema
     ROLES: {

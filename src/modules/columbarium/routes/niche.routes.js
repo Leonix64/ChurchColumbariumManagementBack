@@ -3,6 +3,7 @@ const router = express.Router();
 const nicheController = require('../controllers/niche.controller');
 const authMiddleware = require('../../auth/middlewares/auth.middleware');
 const columbariumValidator = require('../validators/columbarium.validator');
+const { ROLES } = require('../../../config/constants');
 
 // Aplicar autenticación a todas las rutas
 router.use(authMiddleware.verifyToken);
@@ -13,7 +14,7 @@ router.use(authMiddleware.verifyToken);
  * Roles: admin, seller
  */
 router.get('/stats',
-    authMiddleware.checkRole('admin', 'seller'),
+    authMiddleware.checkRole(ROLES.ADMIN, ROLES.SELLER),
     nicheController.getNicheStats
 );
 
@@ -52,7 +53,7 @@ router.get('/code/:code',
  * NOTA: Debe ir antes de /:id para evitar conflicto de rutas
  */
 router.get('/disabled',
-    authMiddleware.checkRole('admin', 'seller'),
+    authMiddleware.checkRole(ROLES.ADMIN, ROLES.SELLER),
     nicheController.getDisabledNiches
 );
 
@@ -82,7 +83,7 @@ router.get('/',
  * Roles: admin, seller
  */
 router.patch('/:id',
-    authMiddleware.checkRole('admin', 'seller'),
+    authMiddleware.checkRole(ROLES.ADMIN, ROLES.SELLER),
     columbariumValidator.validateMongoId('id'),
     columbariumValidator.validateUpdateNicheStatus,
     nicheController.updateNicheStatus
@@ -95,34 +96,34 @@ router.patch('/:id',
  * Body: { type: 'wood' | 'marble' | 'special', price: number }
  */
 router.patch('/:id/material',
-    authMiddleware.checkRole('admin'),
+    authMiddleware.checkRole(ROLES.ADMIN),
     columbariumValidator.validateMongoId('id'),
     nicheController.changeMaterial
 );
 
 // Cambiar precio (individual)
 router.patch('/:id/price',
-    authMiddleware.checkRole('admin'),
+    authMiddleware.checkRole(ROLES.ADMIN),
     columbariumValidator.validateMongoId('id'),
     nicheController.changePrice
 );
 
 // Deshabilitar nicho
 router.post('/:id/disable',
-    authMiddleware.checkRole('admin'),
+    authMiddleware.checkRole(ROLES.ADMIN),
     columbariumValidator.validateMongoId('id'),
     nicheController.disableNiches
 );
 
 // Habilitar nichos
 router.post('/enable',
-    authMiddleware.checkRole('admin'),
+    authMiddleware.checkRole(ROLES.ADMIN),
     nicheController.enableNiches
 );
 
 // Crear nicho individual
 router.post('/',
-    authMiddleware.checkRole('admin'),
+    authMiddleware.checkRole(ROLES.ADMIN),
     nicheController.createNiche
 );
 

@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const { verifyToken, checkRole } = require('../../auth/middlewares/auth.middleware');
 const ctrl = require('../controllers/beneficiary.controller');
+const { ROLES } = require('../../../config/constants');
 
 /**
  * GET /api/beneficiaries/niche/:nicheId
@@ -30,7 +31,7 @@ router.get('/niche/:nicheId/next',
  */
 router.post('/niche/:nicheId',
     verifyToken,
-    checkRole('admin', 'seller'),
+    checkRole(ROLES.ADMIN, ROLES.SELLER),
     ctrl.create
 );
 
@@ -43,7 +44,7 @@ router.post('/niche/:nicheId',
  */
 router.put('/niche/:nicheId/bulk',
     verifyToken,
-    checkRole('admin', 'seller'),
+    checkRole(ROLES.ADMIN, ROLES.SELLER),
     ctrl.bulkUpdate
 );
 
@@ -54,7 +55,7 @@ router.put('/niche/:nicheId/bulk',
  */
 router.put('/:id',
     verifyToken,
-    checkRole('admin', 'seller'),
+    checkRole(ROLES.ADMIN, ROLES.SELLER),
     ctrl.update
 );
 
@@ -66,7 +67,7 @@ router.put('/:id',
  */
 router.post('/:id/deceased',
     verifyToken,
-    checkRole('admin', 'seller'),
+    checkRole(ROLES.ADMIN, ROLES.SELLER),
     ctrl.markDeceased
 );
 

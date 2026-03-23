@@ -3,6 +3,7 @@ const router = express.Router();
 const customerController = require('../controllers/customer.controller');
 const authMiddleware = require('../../auth/middlewares/auth.middleware');
 const columbariumValidator = require('../validators/columbarium.validator');
+const { ROLES } = require('../../../config/constants');
 
 // Aplicar autenticación a todas las rutas
 router.use(authMiddleware.verifyToken);
@@ -13,7 +14,7 @@ router.use(authMiddleware.verifyToken);
  * Roles: admin, seller
  */
 router.post('/',
-    authMiddleware.checkRole('admin', 'seller'),
+    authMiddleware.checkRole(ROLES.ADMIN, ROLES.SELLER),
     columbariumValidator.validateCreateCustomer,
     customerController.createCustomer
 );
@@ -53,7 +54,7 @@ router.get('/:id',
  * Roles: admin, seller
  */
 router.put('/:id',
-    authMiddleware.checkRole('admin', 'seller'),
+    authMiddleware.checkRole(ROLES.ADMIN, ROLES.SELLER),
     columbariumValidator.validateMongoId('id'),
     customerController.updateCustomer
 );
@@ -64,7 +65,7 @@ router.put('/:id',
  * Roles: solo admin
  */
 router.delete('/:id',
-    authMiddleware.checkRole('admin'),
+    authMiddleware.checkRole(ROLES.ADMIN),
     columbariumValidator.validateMongoId('id'),
     customerController.deleteCustomer
 );
@@ -75,7 +76,7 @@ router.delete('/:id',
  * Roles: solo admin
  */
 router.patch('/:id/activate',
-    authMiddleware.checkRole('admin'),
+    authMiddleware.checkRole(ROLES.ADMIN),
     columbariumValidator.validateMongoId('id'),
     customerController.activateCustomer
 );

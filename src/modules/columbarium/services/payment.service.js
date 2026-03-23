@@ -8,6 +8,7 @@ const { errors } = require('../../../middlewares/errorHandler');
 const { toDecimal, toNumber } = require('../../../utils/decimal');
 const { updateOverdueEntries, calculatePaymentDistribution } = require('./amortization.service');
 const { nowUTC } = require('../../../utils/dateHelpers');
+const { AUDIT_STATUS } = require('../../../config/constants');
 
 /**
  * Registra un pago y distribuye el monto entre las cuotas pendientes.
@@ -133,7 +134,7 @@ async function registerPayment(saleId, { amount, method, notes, paymentMode, spe
                 balanceBefore,
                 balanceAfter
             },
-            status: 'success',
+            status: AUDIT_STATUS.SUCCESS,
             ip: userCtx.ip,
             userAgent: userCtx.userAgent
         }], { session });
