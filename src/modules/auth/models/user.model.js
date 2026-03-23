@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const config = require('../../../config/env');
+const { AUTH, ROLES } = require('../../../config/constants');
 
 const UserSchema = new mongoose.Schema({
     // Datos de identificación
@@ -51,10 +52,10 @@ const UserSchema = new mongoose.Schema({
     role: {
         type: String,
         enum: {
-            values: ['admin', 'seller', 'viewer'],
-            message: 'Rol invalido. Debe ser: admin, seller o viewer'
+            values: ROLES.ALL,
+            message: `Rol invalido. Debe ser: ${ROLES.ALL.join(', ')}`
         },
-        default: 'seller',
+        default: ROLES.SELLER,
         required: true,
         index: true
     },
@@ -171,9 +172,9 @@ UserSchema.methods.incrementLoginAttempts = async function () {
     // Incrementar intentos
     const updates = { $inc: { loginAttempts: 1 } };
 
-    // Bloquear después de 5 intentos fallidos (2 horas)
-    if (this.loginAttempts + 1 >= 5 && !this.isLocked) {
-        updates.$set = { lockUntil: Date.now() + 2 * 60 * 60 * 1000 };
+    // Bloquear después de MAX_LOGIN_ATTEMPTS intentos fallidos
+    if (this.loginAttempts + 1 >= AUTH.MAX_LOGIN_ATTEMPTS && !this.isLocked) {
+        updates.$set = { lockUntil: Date.now() + AUTH.LOCK_TIME_MS };
     }
 
     return await this.updateOne(updates);

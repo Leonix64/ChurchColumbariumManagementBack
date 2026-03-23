@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const logger = require('../../../utils/logger');
 
 require('./beneficiary.model');
 require('./customer.model');
@@ -11,6 +12,6 @@ require('./amortSchedule.model');
 require('./paymentScheduleLink.model');
 require('./succession.model');
 
-console.log('[INFO] Modelos registrados correctamente');
+logger.info('Modelos registrados correctamente');
 
 module.exports = mongoose;

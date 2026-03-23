@@ -1,12 +1,12 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 
-const Sale               = require('../modules/columbarium/models/sale.model');
-const Payment            = require('../modules/columbarium/models/payment.model');
-const AmortSchedule      = require('../modules/columbarium/models/amortSchedule.model');
-const PaymentScheduleLink = require('../modules/columbarium/models/paymentScheduleLink.model');
-const Niche              = require('../modules/columbarium/models/niche.model');
-const Customer           = require('../modules/columbarium/models/customer.model');
+const Sale               = require('./src/modules/columbarium/models/sale.model');
+const Payment            = require('./src/modules/columbarium/models/payment.model');
+const AmortSchedule      = require('./src/modules/columbarium/models/amortSchedule.model');
+const PaymentScheduleLink = require('./src/modules/columbarium/models/paymentScheduleLink.model');
+const Niche              = require('./src/modules/columbarium/models/niche.model');
+const Customer           = require('./src/modules/columbarium/models/customer.model');
 
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('[INFO] Conectado para crear ventas de prueba...'))

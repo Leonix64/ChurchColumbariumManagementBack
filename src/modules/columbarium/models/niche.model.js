@@ -37,7 +37,6 @@ const OwnershipHistorySchema = new mongoose.Schema({
  * Tiene ubicación, precio, estado y propietario actual.
  * Mantiene historial de titularidad embebido.
  */
-
 const NicheSchema = new mongoose.Schema({
     code: {
         type: String,

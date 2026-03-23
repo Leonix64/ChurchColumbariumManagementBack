@@ -6,7 +6,6 @@ const { toNumber } = require('../../../utils/decimal');
  * Devolución de dinero por cancelación de venta.
  * Registra monto, método, razón y usuario autorizante.
  */
-
 const RefundSchema = new mongoose.Schema({
     sale: {
         type: mongoose.Schema.Types.ObjectId, ref: 'Sale',
@@ -81,7 +80,7 @@ const RefundSchema = new mongoose.Schema({
 // Indices
 RefundSchema.index({ sale: 1, refundDate: -1 });
 RefundSchema.index({ customer: 1, refundDate: -1 });
-RefundSchema.index({ receiptNumber: 1 });
+// receiptNumber no necesita schema.index() — ya tiene unique:true en la definición del campo
 RefundSchema.index({ status: 1, createdAt: -1 });
 
 // Convertir Decimal128 -> Number en JSON

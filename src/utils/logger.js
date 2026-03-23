@@ -4,7 +4,6 @@
  * - info/warn/debug: Solo en desarrollo
  * - error: Siempre activo (producción y desarrollo)
  */
-
 const isDev = process.env.NODE_ENV !== 'production';
 
 /**

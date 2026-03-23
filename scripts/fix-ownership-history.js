@@ -1,8 +1,8 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-require('../modules/columbarium/models/index.model');
-const Niche = require('../modules/columbarium/models/niche.model');
-const Sale  = require('../modules/columbarium/models/sale.model');
+require('./src/modules/columbarium/models/index.model');
+const Niche = require('./src/modules/columbarium/models/niche.model');
+const Sale  = require('./src/modules/columbarium/models/sale.model');
 
 async function fixOwnershipHistory() {
     await mongoose.connect(process.env.MONGO_URI);

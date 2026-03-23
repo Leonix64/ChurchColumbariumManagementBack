@@ -1,7 +1,7 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const User = require('../modules/auth/models/user.model');
-const config = require('../config/env');
+const User = require('./src/modules/auth/models/user.model');
+const config = require('./src/config/env');
 
 mongoose.set('strictQuery', true);
 

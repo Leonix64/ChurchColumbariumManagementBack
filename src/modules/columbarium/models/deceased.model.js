@@ -6,7 +6,6 @@ const mongoose = require('mongoose');
  * Un nicho puede tener varios ocupantes (array en Niche.occupants).
  * Registra fechas importantes y relación con el propietario.
  */
-
 const DeceasedSchema = new mongoose.Schema({
     niche: {
         type: mongoose.Schema.Types.ObjectId,

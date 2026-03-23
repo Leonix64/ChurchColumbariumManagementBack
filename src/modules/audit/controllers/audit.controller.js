@@ -1,5 +1,7 @@
 const Audit = require('../models/audit.model');
 const { asyncHandler, errors } = require('../../../middlewares/errorHandler');
+const { PAGINATION, AUDIT } = require('../../../config/constants');
+const { nowUTC, endOfDayUTC } = require('../../../utils/dateHelpers');
 
 const auditController = {
     /**
@@ -29,19 +31,16 @@ const auditController = {
         if (startDate || endDate) {
             filter.timestamp = {};
             if (startDate) filter.timestamp.$gte = new Date(startDate);
-            if (endDate) {
-                const end = new Date(endDate);
-                end.setHours(23, 59, 59, 999); // Incluir todo el dia
-                filter.timestamp.$lte = end;
-            }
+            if (endDate) filter.timestamp.$lte = endOfDayUTC(new Date(endDate));
         }
 
-        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const parsedLimit = Math.min(parseInt(limit) || PAGINATION.AUDIT_ALL_DEFAULT, PAGINATION.AUDIT_MAX_LIMIT);
+        const skip = (parseInt(page) - 1) * parsedLimit;
 
         const logs = await Audit.find(filter)
             .populate('user', 'username fullName role email')
             .sort({ timestamp: -1 })
-            .limit(parseInt(limit))
+            .limit(parsedLimit)
             .skip(skip);
 
         const total = await Audit.countDocuments(filter);
@@ -51,7 +50,7 @@ const auditController = {
             count: logs.length,
             total,
             page: parseInt(page),
-            pages: Math.ceil(total / parseInt(limit)),
+            pages: Math.ceil(total / parsedLimit),
             data: logs
         });
     }),
@@ -67,11 +66,7 @@ const auditController = {
         if (startDate || endDate) {
             dateFilter.timestamp = {};
             if (startDate) dateFilter.timestamp.$gte = new Date(startDate);
-            if (endDate) {
-                const end = new Date(endDate);
-                end.setHours(23, 59, 59, 999);
-                dateFilter.timestamp.$lte = end;
-            }
+            if (endDate) dateFilter.timestamp.$lte = endOfDayUTC(new Date(endDate));
         }
 
         const total = await Audit.countDocuments(dateFilter);
@@ -118,8 +113,8 @@ const auditController = {
             }
         ]);
 
-        const last7Days = new Date();
-        last7Days.setDate(last7Days.getDate() - 7);
+        const last7Days = nowUTC();
+        last7Days.setUTCDate(last7Days.getUTCDate() - 7);
 
         const activityByDay = await Audit.aggregate([
             {
@@ -195,12 +190,13 @@ const auditController = {
             throw errors.badRequest('ID de usuario requerido');
         }
 
-        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const parsedLimit = Math.min(parseInt(limit) || PAGINATION.AUDIT_DEFAULT_LIMIT, PAGINATION.AUDIT_MAX_LIMIT);
+        const skip = (parseInt(page) - 1) * parsedLimit;
 
         const logs = await Audit.find({ user: userId })
             .populate('user', 'username fullName role')
             .sort({ timestamp: -1 })
-            .limit(parseInt(limit))
+            .limit(parsedLimit)
             .skip(skip);
 
         const total = await Audit.countDocuments({ user: userId });
@@ -210,7 +206,7 @@ const auditController = {
             count: logs.length,
             total,
             page: parseInt(page),
-            pages: Math.ceil(total / parseInt(limit)),
+            pages: Math.ceil(total / parsedLimit),
             userId,
             data: logs
         });
@@ -222,11 +218,12 @@ const auditController = {
      */
     getRecentActivity: asyncHandler(async (req, res) => {
         const { limit = 20 } = req.query;
+        const parsedLimit = Math.min(parseInt(limit) || PAGINATION.AUDIT_RECENT_DEFAULT, PAGINATION.AUDIT_MAX_LIMIT);
 
         const logs = await Audit.find()
             .populate('user', 'username fullName role')
             .sort({ timestamp: -1 })
-            .limit(parseInt(limit));
+            .limit(parsedLimit);
 
         res.json({
             success: true,
@@ -285,12 +282,12 @@ const auditController = {
         // Soportar body y query params
         const daysOld = req.body?.daysOld || req.query?.daysOld || 365;
 
-        if (parseInt(daysOld) < 90) {
-            throw errors.badRequest('No se pueden eliminar logs menores a 90 días');
+        if (parseInt(daysOld) < AUDIT.MIN_CLEANUP_DAYS) {
+            throw errors.badRequest(`No se pueden eliminar logs menores a ${AUDIT.MIN_CLEANUP_DAYS} días`);
         }
 
-        const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - parseInt(daysOld));
+        const cutoffDate = nowUTC();
+        cutoffDate.setUTCDate(cutoffDate.getUTCDate() - parseInt(daysOld));
 
         const result = await Audit.deleteMany({
             timestamp: { $lt: cutoffDate }

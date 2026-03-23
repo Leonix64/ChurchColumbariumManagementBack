@@ -5,7 +5,6 @@ const mongoose = require('mongoose');
  * Registro de cada transferencia de propietario en un nicho.
  * Puede ser por fallecimiento, herencia o transferencia manual.
  */
-
 const SuccessionSchema = new mongoose.Schema({
     niche: {
         type: mongoose.Schema.Types.ObjectId,

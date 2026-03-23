@@ -1,6 +1,6 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const Niche = require('../modules/columbarium/models/niche.model');
+const Niche = require('./src/modules/columbarium/models/niche.model');
 
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('[INFO] Conectado para poblar TODOS los módulos del columbario...'))

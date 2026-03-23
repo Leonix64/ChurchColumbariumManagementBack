@@ -3,7 +3,6 @@
  * Valida datos de entrada antes de procesarlos en los controllers.
  * Incluye validaciones para: clientes, nichos, ventas y IDs de MongoDB.
  */
-
 const { errors } = require('../../../middlewares/errorHandler');
 const mongoose = require('mongoose');
 
@@ -142,10 +141,10 @@ const columbariumValidator = {
                 field: 'downPayment',
                 message: 'El enganche debe ser mayor a 0'
             });
-        } else if (totalAmount && downPayment >= totalAmount) {
+        } else if (totalAmount && Number(downPayment) > Number(totalAmount)) {
             validationErrors.push({
                 field: 'downPayment',
-                message: 'El enganche debe ser menor al total'
+                message: 'El enganche no puede ser mayor al monto total'
             });
         }
 

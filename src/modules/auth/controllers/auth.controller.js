@@ -402,6 +402,22 @@ const authController = {
             success: true,
             message: 'Todos los tokens invalidados. El usuario debera iniciar sesion nuevamente.'
         });
+    }),
+
+    /**
+     * LISTAR TODOS LOS USUARIOS (Solo Admin)
+     * GET /api/auth/admin/users
+     */
+    getAllUsers: asyncHandler(async (req, res) => {
+        const users = await User.find({})
+            .select('-password -refreshToken -loginAttempts -lockUntil')
+            .sort({ createdAt: -1 });
+
+        return res.json({
+            success: true,
+            count: users.length,
+            data: users
+        });
     })
 };
 
